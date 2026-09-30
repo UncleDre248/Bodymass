@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Динамика массы тела</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a1018">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { box-sizing: border-box; }
@@ -252,7 +254,6 @@
             ctx.closePath();
         }
 
-        // ----- Плагин: вертикальная ось Y -----
         const yAxisLinePlugin = {
             id: 'yAxisLine',
             beforeDatasetsDraw(chart) {
@@ -756,6 +757,15 @@
         }
 
         window.onload = loadData;
+    </script>
+
+    <!-- Регистрация Service Worker для PWA -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            });
+        }
     </script>
 </body>
 </html>
