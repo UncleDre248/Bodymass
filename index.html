@@ -417,9 +417,11 @@
                 const chartWidth = chartArea.right - chartArea.left;
                 const isSmall = chartWidth < 400;
 
+                // Высота плашек уменьшена ещё на ~20%:
+                // было 11 / 9.5 → стало 9 / 7.5
                 const fontPx = isSmall ? 8 : 10;
-                const pw0 = isSmall ? 8 : 10;
-                const ph = isSmall ? 9.5 : 11;
+                const pw0 = isSmall ? 7 : 9;
+                const ph = isSmall ? 7.5 : 9;
 
                 const drawBadge = (weight, color) => {
                     const y = yScale.getPixelForValue(weight);
@@ -435,7 +437,7 @@
                     const by = y - ph / 2;
 
                     ctx.fillStyle = color;
-                    roundRect(ctx, bx, by, pw, ph, 3);
+                    roundRect(ctx, bx, by, pw, ph, 2);
                     ctx.fill();
 
                     ctx.fillStyle = '#001236';
@@ -739,11 +741,8 @@
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
 
-            // Верхний и нижний отступы симметричны:
-            // подписи годов сверху и подписи месяцев снизу теперь
-            // находятся на одинаковом расстоянии от края тёмного поля.
             const padTop = isLandscapePhone ? 14 : (isSmall ? 18 : 22);
-            const padBottom = isLandscapePhone ? 16 : (isSmall ? 20 : 24);
+            const padBottom = isLandscapePhone ? 40 : (isSmall ? 50 : 60);
 
             chart = new Chart(ctx, {
                 type: 'bar',
@@ -767,7 +766,7 @@
                     animation: { duration: 500, easing: 'easeOutQuart' },
                     interaction: { mode: 'index', intersect: false },
                     layout: {
-                        padding: { top: padTop, bottom: padBottom, left: 18, right: 8 }
+                        padding: { top: padTop, bottom: padBottom, left: 23, right: 8 }
                     },
                     plugins: {
                         legend: { display: false },
