@@ -42,7 +42,6 @@
         }
         .stat-item {
             background: linear-gradient(135deg, #1e2a3a 0%, #243447 100%);
-            /* Высота уменьшена примерно на 20% (было 12px 10px) */
             padding: 9px 10px;
             border-radius: 12px;
             text-align: center;
@@ -418,7 +417,6 @@
                 const chartWidth = chartArea.right - chartArea.left;
                 const isSmall = chartWidth < 400;
 
-                // ВЕРНУЛ ПЕРВОНАЧАЛЬНЫЕ ЗНАЧЕНИЯ плашек max/min:
                 const fontPx = isSmall ? 8 : 10;
                 const pw0 = isSmall ? 8 : 10;
                 const ph = isSmall ? 9.5 : 11;
@@ -453,6 +451,7 @@
             }
         };
 
+        // ----- Плагин подписей месяцев: только 3 буквы, без года -----
         const monthLabelsPlugin = {
             id: 'monthLabels',
             afterDraw(chart) {
@@ -477,7 +476,8 @@
                     const xCenter = (xStart + xEnd) / 2;
 
                     if (xCenter >= chartArea.left && xCenter <= chartArea.right) {
-                        const label = MONTHS_RU[seg.month] + ' ' + seg.year;
+                        // Только название месяца, без года
+                        const label = MONTHS_RU[seg.month];
 
                         ctx.save();
                         ctx.translate(xCenter, chartArea.bottom + offset);
