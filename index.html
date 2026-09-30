@@ -410,10 +410,20 @@
 
                 let maxWeight = null, minWeight = null;
                 let maxDate = null, minDate = null;
+                let firstRealDate = null, lastRealDate = null;
+                let firstRealWeight = null, lastRealWeight = null;
 
                 for (let i = 0; i < weights.length; i++) {
                     const w = weights[i];
                     if (w <= 0) continue;
+
+                    if (firstRealDate === null) {
+                        firstRealDate = dates[i];
+                        firstRealWeight = w;
+                    }
+                    lastRealDate = dates[i];
+                    lastRealWeight = w;
+
                     if (maxWeight === null || w > maxWeight) { maxWeight = w; maxDate = dates[i]; }
                     if (minWeight === null || w < minWeight) { minWeight = w; minDate = dates[i]; }
                 }
@@ -421,7 +431,15 @@
                 loadingEl.style.display = 'none';
                 dashboardEl.style.display = 'block';
 
-                updateStats(weights, maxWeight, maxDate, minWeight, minDate);
+                updateStats({
+                    lastRealWeight,
+                    lastRealDate,
+                    firstRealWeight,
+                    firstRealDate,
+                    maxWeight, maxDate,
+                    minWeight, minDate
+                });
+
                 createChart(labels, weights, maxWeight, maxDate, minWeight, minDate);
 
             } catch (error) {
@@ -432,15 +450,13 @@
             }
         }
 
-        function updateStats(weights, maxWeight, maxDate, minWeight, minDate) {
+        function updateStats(data) {
             const currentEl = document.getElementById('currentWeight');
             const changeEl = document.getElementById('totalChange');
             const maxEl = document.getElementById('maxWeight');
             const minEl = document.getElementById('minWeight');
 
-            const real = weights.filter(w => w > 0);
-
-            if (real.length === 0) {
+            if (data.lastRealWeight === null) {
                 currentEl.textContent = '--';
                 changeEl.textContent = '--';
                 maxEl.textContent = '--';
@@ -448,23 +464,30 @@
                 return;
             }
 
-            const current = real[real.length - 1];
-            const first = real[0];
-            const change = current - first;
+            // Текущий вес (последняя запись) + дата
+            currentEl.innerHTML = data.lastRealWeight.toFixed(1) + ' кг<small>' +
+                formatDateShort(data.lastRealDate) + '</small>';
+            currentEl.style.color = colorForWeight(data.lastRealWeight);
 
-            currentEl.textContent = current.toFixed(1) + ' кг';
-            currentEl.style.color = colorForWeight(current);
-
-            changeEl.textContent = (change > 0 ? '+' : '') + change.toFixed(1) + ' кг';
+            // Изменение: последняя − первая + диапазон дат
+            const change = data.lastRealWeight - data.firstRealWeight;
+            const sign = change > 0 ? '+' : '';
+            const range = formatDateShort(data.firstRealDate) + ' → ' + formatDateShort(data.lastRealDate);
+            changeEl.innerHTML = sign + change.toFixed(1) + ' кг<small>' + range + '</small>';
             changeEl.className = change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral';
 
-            if (maxWeight !== null) {
-                maxEl.innerHTML = maxWeight.toFixed(1) + ' кг<small>' + formatDateShort(maxDate) + '</small>';
-                maxEl.style.color = colorForWeight(maxWeight);
+            // Максимум + дата
+            if (data.maxWeight !== null) {
+                maxEl.innerHTML = data.maxWeight.toFixed(1) + ' кг<small>' +
+                    formatDateShort(data.maxDate) + '</small>';
+                maxEl.style.color = colorForWeight(data.maxWeight);
             }
-            if (minWeight !== null) {
-                minEl.innerHTML = minWeight.toFixed(1) + ' кг<small>' + formatDateShort(minDate) + '</small>';
-                minEl.style.color = colorForWeight(minWeight);
+
+            // Минимум + дата
+            if (data.minWeight !== null) {
+                minEl.innerHTML = data.minWeight.toFixed(1) + ' кг<small>' +
+                    formatDateShort(data.minDate) + '</small>';
+                minEl.style.color = colorForWeight(data.minWeight);
             }
         }
 
