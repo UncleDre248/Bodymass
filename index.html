@@ -406,7 +406,6 @@
             }
         };
 
-        // ----- Плагин подписей месяцев — вертикально, снизу вверх -----
         const monthLabelsPlugin = {
             id: 'monthLabels',
             afterDraw(chart) {
@@ -428,11 +427,9 @@
                         const label = MONTHS_RU[seg.month] + ' ' + seg.year;
 
                         ctx.save();
-                        // Точка привязки — верхний край подписи (у оси X)
                         ctx.translate(xCenter, chartArea.bottom + 6);
-                        // Поворот на -90°: текст идёт снизу вверх
                         ctx.rotate(-Math.PI / 2);
-                        ctx.textAlign = 'right';   // текст выровнен по "верхнему краю" в исходной ориентации
+                        ctx.textAlign = 'right';
                         ctx.textBaseline = 'middle';
                         ctx.fillText(label, 0, 0);
                         ctx.restore();
@@ -747,11 +744,9 @@
                             }
                         },
                         x: {
+                            // Заголовок оси X убран — display: false
                             title: {
-                                display: true,
-                                text: 'Дата',
-                                color: '#c8d8e8',
-                                font: { size: 10 }
+                                display: false
                             },
                             grid: { display: false },
                             ticks: {
