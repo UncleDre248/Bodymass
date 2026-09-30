@@ -232,6 +232,9 @@
             76: '#B20000'
         };
 
+        // Сколько пикселей сдвигаем ось X вниз
+        const X_AXIS_DOWN_SHIFT = 10;
+
         function colorForWeight(w) {
             const key = Math.floor(w);
             if (RANGE_COLORS[key] !== undefined) return RANGE_COLORS[key];
@@ -300,15 +303,6 @@
             ctx.quadraticCurveTo(x, y, x + r, y);
             ctx.closePath();
         }
-
-        // Плагин, который запоминает "старую" позицию chartArea.bottom ДО сдвига оси X
-        // вниз и использует её как базу для годов.
-        const yearBasePlugin = {
-            id: 'yearBase',
-            beforeLayout(chart) {
-                // будет установлено ниже
-            }
-        };
 
         const yAxisLinePlugin = {
             id: 'yAxisLine',
@@ -467,10 +461,9 @@
             }
         };
 
-        // Годы рисуются от фиксированной базы, которая НЕ сдвигается вместе с осью X.
-        // База сохраняется в chart._yearBaseY при первом afterDraw (до сдвига
-        // она равна нормальному chartArea.bottom — но так как ось X сдвинута вниз
-        // через afterFit, в _yearBaseY мы будем хранить chartArea.bottom - 10).
+        // Годы рисуются от ВЕРХНЕЙ границы оси X, то есть от
+        // (chartArea.bottom - X_AXIS_DOWN_SHIFT). Это компенсирует сдвиг оси,
+        // так что годы остаются визуально на прежнем уровне.
         const yearLabelsPlugin = {
             id: 'yearLabels',
             afterDraw(chart) {
@@ -483,22 +476,17 @@
                 const isSmall = chartWidth < 400;
 
                 const fontPx = isSmall ? 9 : 11;
-                // Годы рисуются от базы, зафиксированной до сдвига оси X.
-                // chart._yearBaseY вычисляется в самом первом afterDraw и
-                // остаётся неизменной при ресайзах (пока не пересоздаётся график).
-                if (chart._yearBaseY === undefined) {
-                    chart._yearBaseY = chartArea.bottom;
-                }
-                const baseY = chart._yearBaseY;
                 const offset = isSmall ? 55 : 62;
+
+                // Компенсируем сдвиг оси X вниз — годы остаются на месте.
+                const baseY = chartArea.bottom - X_AXIS_DOWN_SHIFT;
+                const y = baseY + offset;
 
                 ctx.save();
                 ctx.font = `bold ${fontPx}px Inter, sans-serif`;
                 ctx.fillStyle = 'rgba(200, 216, 232, 0.55)';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'top';
-
-                const y = baseY + offset;
 
                 chart._yearSegments.forEach(seg => {
                     const xStart = xScale.getPixelForValue(seg.startIdx);
@@ -762,14 +750,18 @@
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
 
-            const padTop = isLandscapePhone ? 8 : (isSmall ? 10 : 12);
-            // Нижний отступ увеличен на 10px, чтобы вместить сдвинутую вниз ось X.
-            const padBottom = isLandscapePhone ? 77 : (isSmall ? 82 : 91);
+            // Верхний отступ увеличен на X_AXIS_DOWN_SHIFT,
+            // чтобы область графика сместилась вниз и ось X опустилась.
+            const basePadTop = isLandscapePhone ? 8 : (isSmall ? 10 : 12);
+            const padTop = basePadTop + X_AXIS_DOWN_SHIFT;
+
+            // Нижний отступ оставляем прежним — годы теперь рисуются
+            // от chartArea.bottom - X_AXIS_DOWN_SHIFT, так что им хватает места.
+            const padBottom = isLandscapePhone ? 67 : (isSmall ? 72 : 81);
             const padLeft = 12;
             const padRight = 12;
 
             const Y_AXIS_SHIFT = 8;
-            const X_AXIS_SHIFT = 10; // сдвиг горизонтальной оси вниз, в пикселях
 
             chart = new Chart(ctx, {
                 type: 'bar',
@@ -842,12 +834,6 @@
                                 autoSkip: false,
                                 maxRotation: 0,
                                 minRotation: 0
-                            },
-                            // Сдвигаем горизонтальную ось X вниз, увеличивая её высоту.
-                            // chartArea.bottom при этом опускается, а годы мы рисуем
-                            // от сохранённой базы _yearBaseY.
-                            afterFit(scale) {
-                                scale.height += X_AXIS_SHIFT;
                             }
                         }
                     }
