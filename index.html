@@ -196,8 +196,8 @@
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRCxUQ2eWCaI8HwAvEFRVc1VzXgjun4Gkx5K6vk3x7dHyKaaq_GHatCTUMkh2vb2EYIWCtVUmnLnPiE/pub?output=csv';
 
         const MONTHS_RU = [
-            'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-            'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+            'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн',
+            'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'
         ];
 
         const RANGE_COLORS = {
@@ -406,7 +406,7 @@
             }
         };
 
-        // ----- Плагин подписей месяцев под осью X — вертикально -----
+        // ----- Плагин подписей месяцев — вертикально, снизу вверх -----
         const monthLabelsPlugin = {
             id: 'monthLabels',
             afterDraw(chart) {
@@ -427,11 +427,12 @@
                     if (xCenter >= chartArea.left && xCenter <= chartArea.right) {
                         const label = MONTHS_RU[seg.month] + ' ' + seg.year;
 
-                        // Поворачиваем контекст — подпись идёт вертикально сверху вниз
                         ctx.save();
+                        // Точка привязки — верхний край подписи (у оси X)
                         ctx.translate(xCenter, chartArea.bottom + 6);
-                        ctx.rotate(Math.PI / 2); // 90° по часовой
-                        ctx.textAlign = 'left';  // выравнивание по верхнему краю (для повёрнутого текста)
+                        // Поворот на -90°: текст идёт снизу вверх
+                        ctx.rotate(-Math.PI / 2);
+                        ctx.textAlign = 'right';   // текст выровнен по "верхнему краю" в исходной ориентации
                         ctx.textBaseline = 'middle';
                         ctx.fillText(label, 0, 0);
                         ctx.restore();
@@ -709,7 +710,7 @@
                     animation: { duration: 500, easing: 'easeOutQuart' },
                     interaction: { mode: 'index', intersect: false },
                     layout: {
-                        padding: { top: 30, bottom: 100 } // снизу запас под вертикальные подписи месяцев
+                        padding: { top: 30, bottom: 100 }
                     },
                     plugins: {
                         legend: { display: false },
