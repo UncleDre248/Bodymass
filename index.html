@@ -427,7 +427,7 @@
                         const label = MONTHS_RU[seg.month] + ' ' + seg.year;
 
                         ctx.save();
-                        ctx.translate(xCenter, chartArea.bottom + 6);
+                        ctx.translate(xCenter, chartArea.bottom + 4);
                         ctx.rotate(-Math.PI / 2);
                         ctx.textAlign = 'right';
                         ctx.textBaseline = 'middle';
@@ -706,8 +706,9 @@
                     maintainAspectRatio: false,
                     animation: { duration: 500, easing: 'easeOutQuart' },
                     interaction: { mode: 'index', intersect: false },
+                    // Отступы уменьшены — теперь симметричные
                     layout: {
-                        padding: { top: 30, bottom: 100 }
+                        padding: { top: 22, bottom: 22 }
                     },
                     plugins: {
                         legend: { display: false },
@@ -744,10 +745,7 @@
                             }
                         },
                         x: {
-                            // Заголовок оси X убран — display: false
-                            title: {
-                                display: false
-                            },
+                            title: { display: false },
                             grid: { display: false },
                             ticks: {
                                 display: false,
