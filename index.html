@@ -419,6 +419,7 @@
         };
 
         // ----- Плагин подписей месяцев: 3 буквы, вертикально, снизу вверх -----
+        // Отступ от горизонтальной оси увеличен на 5px: было offset 4 / 2, стало 9 / 7.
         const monthLabelsPlugin = {
             id: 'monthLabels',
             afterDraw(chart) {
@@ -431,7 +432,8 @@
                 const isSmall = chartWidth < 400;
 
                 const fontPx = isSmall ? 8 : 10;
-                const offset = isSmall ? 2 : 4;
+                // Было: isSmall ? 2 : 4 → стало: isSmall ? 7 : 9 (+5 пикселей)
+                const offset = isSmall ? 7 : 9;
 
                 ctx.save();
                 ctx.font = `bold ${fontPx}px Inter, sans-serif`;
@@ -459,7 +461,7 @@
             }
         };
 
-        // ----- Плагин подписей годов: теперь внизу, под месяцами -----
+        // ----- Плагин подписей годов: внизу, под месяцами -----
         const yearLabelsPlugin = {
             id: 'yearLabels',
             afterDraw(chart) {
@@ -472,9 +474,6 @@
                 const isSmall = chartWidth < 400;
 
                 const fontPx = isSmall ? 9 : 11;
-                // Отступ от низа области графика до подписей годов.
-                // Месяцы рисуются на chartArea.bottom + 4 (или +2), длиной ~55-60px.
-                // Годы идут ещё ниже — в самом низу поля диаграммы.
                 const offset = isSmall ? 55 : 62;
 
                 ctx.save();
@@ -747,12 +746,10 @@
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
 
-            // Верхний отступ теперь маленький — только небольшой зазор сверху,
-            // так как годы переехали вниз.
             const padTop = isLandscapePhone ? 8 : (isSmall ? 10 : 12);
 
-            // Нижний отступ увеличен — под месяцы (≈60px) + годы (≈20px) + зазор.
-            const padBottom = isLandscapePhone ? 70 : (isSmall ? 80 : 90);
+            // Нижний отступ увеличен на 5px: было 70/80/90 → стало 75/85/95
+            const padBottom = isLandscapePhone ? 75 : (isSmall ? 85 : 95);
 
             chart = new Chart(ctx, {
                 type: 'bar',
