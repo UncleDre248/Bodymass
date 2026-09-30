@@ -866,3 +866,25 @@
         }
 
         let resizeTimer = null;
+        window.addEventListener('resize', () => {
+            if (resizeTimer) clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                if (window.weightChartInstance) {
+                    window.weightChartInstance.resize();
+                }
+            }, 200);
+        });
+
+        window.onload = loadData;
+    </script>
+
+    <!-- Регистрация Service Worker для PWA -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            });
+        }
+    </script>
+</body>
+</html>
