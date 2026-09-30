@@ -79,6 +79,10 @@
         .stat-item p.positive { color: #e74c3c; }
         .stat-item p.negative { color: #27ae60; }
         .stat-item p.neutral  { color: #4db8ff; }
+        /* Значение плашки «Изменение» — всегда белое */
+        #totalChange {
+            color: #ffffff !important;
+        }
         .stat-item p small {
             display: block;
             font-size: 12px;
@@ -470,11 +474,12 @@
             currentEl.style.color = colorForWeight(data.lastRealWeight);
 
             // Изменение: последняя − первая + диапазон дат
+            // Цвет — всегда белый (задан через CSS #totalChange)
             const change = data.lastRealWeight - data.firstRealWeight;
             const sign = change > 0 ? '+' : '';
             const range = formatDateShort(data.firstRealDate) + ' → ' + formatDateShort(data.lastRealDate);
             changeEl.innerHTML = sign + change.toFixed(1) + ' кг<small>' + range + '</small>';
-            changeEl.className = change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral';
+            // Никаких классов positive/negative/neutral — цвет фиксированный белый
 
             // Максимум + дата
             if (data.maxWeight !== null) {
