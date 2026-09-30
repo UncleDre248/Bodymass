@@ -126,85 +126,52 @@
         }
 
         /* ============ АДАПТИВ ============ */
-
-        /* Большой планшет и ноутбук: 5 в ряд, обычные размеры */
         @media (max-width: 1100px) {
             .stat-item p { font-size: 18px; }
             .stat-item h3 { font-size: 10px; }
         }
-
-        /* Планшет в портрете: 3 колонки */
         @media (max-width: 900px) {
             .stats {
                 grid-template-columns: repeat(3, 1fr);
                 gap: 10px;
                 margin-bottom: 14px;
             }
-            .stat-item {
-                padding: 10px 8px;
-            }
+            .stat-item { padding: 10px 8px; }
             .stat-item p { font-size: 18px; }
             .stat-item p small { font-size: 10px; }
         }
-
-        /* Телефон: 2 колонки, компактнее */
         @media (max-width: 600px) {
             body { padding: 8px; }
-            .container {
-                padding: 12px;
-                border-radius: 12px;
-            }
+            .container { padding: 12px; border-radius: 12px; }
             .stats {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 8px;
                 margin-bottom: 10px;
             }
-            .stat-item {
-                padding: 8px 6px;
-                border-radius: 10px;
-            }
+            .stat-item { padding: 8px 6px; border-radius: 10px; }
             .stat-item h3 {
                 font-size: 9px;
                 letter-spacing: 0.5px;
                 margin-bottom: 4px;
             }
-            .stat-item p {
-                font-size: 16px;
-            }
-            .stat-item p small {
-                font-size: 9px;
-                margin-top: 2px;
-            }
-            .chart-container {
-                padding: 6px;
-                border-radius: 8px;
-                min-height: 180px;
-            }
+            .stat-item p { font-size: 16px; }
+            .stat-item p small { font-size: 9px; margin-top: 2px; }
+            .chart-container { padding: 6px; border-radius: 8px; min-height: 180px; }
         }
-
-        /* Очень узкие экраны — всё ещё компактнее */
         @media (max-width: 380px) {
             .stat-item p { font-size: 14px; }
             .stat-item h3 { font-size: 8px; }
         }
-
-        /* Портретная ориентация на телефоне — вертикальное распределение */
         @media (max-width: 600px) and (orientation: portrait) {
-            .chart-container {
-                min-height: 220px;
-            }
+            .chart-container { min-height: 220px; }
         }
-
-        /* Альбомная ориентация на телефоне — диаграмма шире, карточки мельче */
         @media (max-width: 900px) and (orientation: landscape) {
             .stats {
                 grid-template-columns: repeat(5, 1fr);
                 gap: 6px;
                 margin-bottom: 8px;
             }
-            .stat-item {
-                padding: 6px 4px;
-            }
+            .stat-item { padding: 6px 4px; }
             .stat-item h3 { font-size: 8px; margin-bottom: 2px; }
             .stat-item p { font-size: 14px; }
             .stat-item p small { font-size: 8px; margin-top: 1px; }
@@ -334,18 +301,22 @@
             ctx.closePath();
         }
 
+        // ----- Плагин: вертикальная ось Y -----
+        // Сдвинута на +6px правее, чтобы стоять чуть ближе к столбцам
         const yAxisLinePlugin = {
             id: 'yAxisLine',
             beforeDatasetsDraw(chart) {
                 const { ctx, chartArea } = chart;
                 if (!chartArea) return;
 
+                const xOffset = 6; // сдвиг вправо от границы chartArea
+
                 ctx.save();
                 ctx.beginPath();
                 ctx.lineWidth = 1;
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-                ctx.moveTo(chartArea.left, chartArea.top);
-                ctx.lineTo(chartArea.left, chartArea.bottom);
+                ctx.moveTo(chartArea.left + xOffset, chartArea.top);
+                ctx.lineTo(chartArea.left + xOffset, chartArea.bottom);
                 ctx.stroke();
                 ctx.restore();
             }
@@ -385,7 +356,6 @@
                 if (!chart._yearSegments || chart._yearSegments.length === 0) return;
 
                 const xScale = scales.x;
-                // Адаптивный размер шрифта — меньше на узких экранах
                 const chartWidth = chartArea.right - chartArea.left;
                 const fontPx = chartWidth < 400 ? 9 : 11;
 
@@ -449,9 +419,10 @@
                 const chartWidth = chartArea.right - chartArea.left;
                 const isSmall = chartWidth < 400;
 
+                // Высота плашек уменьшена ~20%: было 14 / 12, стало 11 / 9.5
                 const fontPx = isSmall ? 8 : 10;
                 const pw0 = isSmall ? 8 : 10;
-                const ph = isSmall ? 12 : 14;
+                const ph = isSmall ? 9.5 : 11;
 
                 const drawBadge = (weight, color) => {
                     const y = yScale.getPixelForValue(weight);
@@ -467,7 +438,7 @@
                     const by = y - ph / 2;
 
                     ctx.fillStyle = color;
-                    roundRect(ctx, bx, by, pw, ph, 4);
+                    roundRect(ctx, bx, by, pw, ph, 3);
                     ctx.fill();
 
                     ctx.fillStyle = '#001236';
@@ -768,13 +739,11 @@
             const ctx = document.getElementById('weightChart').getContext('2d');
             const barColors = data.map(w => w > 0 ? colorForWeight(w) : 'transparent');
 
-            // Адаптивные отступы под размер экрана
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
-            const isSmallLandscape = isLandscapePhone;
 
-            const padTop = isSmallLandscape ? 14 : (isSmall ? 18 : 22);
-            const padBottom = isSmallLandscape ? 40 : (isSmall ? 50 : 70);
+            const padTop = isLandscapePhone ? 14 : (isSmall ? 18 : 22);
+            const padBottom = isLandscapePhone ? 40 : (isSmall ? 50 : 70);
 
             chart = new Chart(ctx, {
                 type: 'bar',
@@ -798,7 +767,8 @@
                     animation: { duration: 500, easing: 'easeOutQuart' },
                     interaction: { mode: 'index', intersect: false },
                     layout: {
-                        padding: { top: padTop, bottom: padBottom }
+                        // padding.left увеличен — заголовок оси Y («Масса тела (кг)») сдвинут левее
+                        padding: { top: padTop, bottom: padBottom, left: 18, right: 8 }
                     },
                     plugins: {
                         legend: { display: false },
@@ -825,13 +795,15 @@
                                 display: true,
                                 text: 'Масса тела (кг)',
                                 color: '#c8d8e8',
-                                font: { size: 10 }
+                                font: { size: 10 },
+                                padding: { top: 0, bottom: 8 }
                             },
                             grid: { color: 'rgba(255,255,255,0.10)' },
                             ticks: {
                                 color: '#c8d8e8',
                                 stepSize: 1,
-                                font: { size: 10 }
+                                font: { size: 10 },
+                                padding: 6
                             }
                         },
                         x: {
@@ -859,7 +831,6 @@
             window.weightChartInstance = chart;
         }
 
-        // Пересоздаём график при изменении размера окна / повороте экрана
         let resizeTimer = null;
         window.addEventListener('resize', () => {
             if (resizeTimer) clearTimeout(resizeTimer);
