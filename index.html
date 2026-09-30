@@ -232,8 +232,9 @@
             76: '#B20000'
         };
 
-        // Сколько пикселей сдвигаем ось X вниз
-        const X_AXIS_DOWN_SHIFT = 10;
+        // Сдвиг горизонтальной оси вниз, в пикселях.
+        // Было 10, стало 20 — ось опустилась ещё на 10px.
+        const X_AXIS_DOWN_SHIFT = 20;
 
         function colorForWeight(w) {
             const key = Math.floor(w);
@@ -461,9 +462,7 @@
             }
         };
 
-        // Годы рисуются от ВЕРХНЕЙ границы оси X, то есть от
-        // (chartArea.bottom - X_AXIS_DOWN_SHIFT). Это компенсирует сдвиг оси,
-        // так что годы остаются визуально на прежнем уровне.
+        // Годы компенсируют сдвиг оси X и остаются на прежнем уровне.
         const yearLabelsPlugin = {
             id: 'yearLabels',
             afterDraw(chart) {
@@ -478,7 +477,6 @@
                 const fontPx = isSmall ? 9 : 11;
                 const offset = isSmall ? 55 : 62;
 
-                // Компенсируем сдвиг оси X вниз — годы остаются на месте.
                 const baseY = chartArea.bottom - X_AXIS_DOWN_SHIFT;
                 const y = baseY + offset;
 
@@ -750,14 +748,13 @@
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
 
-            // Верхний отступ увеличен на X_AXIS_DOWN_SHIFT,
+            // Верхний отступ увеличен на X_AXIS_DOWN_SHIFT (теперь 20px),
             // чтобы область графика сместилась вниз и ось X опустилась.
             const basePadTop = isLandscapePhone ? 8 : (isSmall ? 10 : 12);
             const padTop = basePadTop + X_AXIS_DOWN_SHIFT;
 
-            // Нижний отступ оставляем прежним — годы теперь рисуются
-            // от chartArea.bottom - X_AXIS_DOWN_SHIFT, так что им хватает места.
-            const padBottom = isLandscapePhone ? 67 : (isSmall ? 72 : 81);
+            // Нижний отступ — тоже увеличен на 10, потому что ось ушла ниже.
+            const padBottom = isLandscapePhone ? 77 : (isSmall ? 82 : 91);
             const padLeft = 12;
             const padRight = 12;
 
