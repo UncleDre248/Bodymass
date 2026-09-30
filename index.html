@@ -96,8 +96,6 @@
             position: relative;
             width: 100%;
             flex: 1;
-            /* Высота диаграммы увеличена, чтобы подписи месяцев и годов
-               умещались в контейнер при уменьшенном нижнем padding. */
             min-height: 260px;
             background-color: #0a1018;
             border-radius: 12px;
@@ -744,14 +742,16 @@
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
 
-            // Все отступы теперь маленькие и симметричные.
-            // Подписи месяцев и годов рисуются поверх canvas за пределами
-            // области графика (chartArea) — им хватает места за счёт min-height
-            // контейнера.
+            // Нижний отступ — компромисс: 28px (большой), 25px (маленький).
+            // Подписи месяцев + годов при этом умещаются, потому что
+            // min-height контейнера достаточный.
             const padTop = isLandscapePhone ? 8 : (isSmall ? 10 : 12);
-            const padBottom = 12;
+            const padBottom = isLandscapePhone ? 25 : (isSmall ? 25 : 28);
             const padLeft = 12;
             const padRight = 12;
+
+            // Сдвиг вертикальной оси и её меток вправо.
+            const Y_AXIS_SHIFT = 8;
 
             chart = new Chart(ctx, {
                 type: 'bar',
@@ -811,6 +811,9 @@
                                 stepSize: 1,
                                 font: { size: 10 },
                                 padding: 4
+                            },
+                            afterFit(scale) {
+                                scale.width += Y_AXIS_SHIFT;
                             }
                         },
                         x: {
