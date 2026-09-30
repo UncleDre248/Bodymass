@@ -213,7 +213,6 @@
             return RANGE_COLORS[76];
         }
 
-        // Преобразует HEX (#RRGGBB) в rgba(r,g,b,alpha)
         function hexToRgba(hex, alpha) {
             const h = hex.replace('#', '');
             const r = parseInt(h.substring(0, 2), 16);
@@ -276,7 +275,7 @@
             ctx.closePath();
         }
 
-        // ----- Плагин 1: вертикальные линии на 1 января — ЗА гистограммой -----
+        // ----- Плагин 1: вертикальные линии на 1 января (за гистограммой) -----
         const yearLinesPlugin = {
             id: 'yearLines',
             beforeDatasetsDraw(chart) {
@@ -303,7 +302,39 @@
             }
         };
 
-        // ----- Плагин 2: пунктирные линии max/min + плашки на оси Y -----
+        // ----- Плагин 2: подписи годов над верхней границей поля диаграммы -----
+        const yearLabelsPlugin = {
+            id: 'yearLabels',
+            afterDraw(chart) {
+                const { ctx, chartArea, scales } = chart;
+                if (!chartArea) return;
+                if (!chart._yearSegments || chart._yearSegments.length === 0) return;
+
+                const xScale = scales.x;
+                ctx.save();
+                ctx.font = 'bold 11px Inter, sans-serif';
+                ctx.fillStyle = 'rgba(200, 216, 232, 0.55)'; // цвет сетки диаграммы
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+
+                const y = chartArea.top - 3; // чуть выше верхней линии поля
+
+                chart._yearSegments.forEach(seg => {
+                    const xStart = xScale.getPixelForValue(seg.startIdx);
+                    const xEnd   = xScale.getPixelForValue(seg.endIdx);
+                    const xCenter = (xStart + xEnd) / 2;
+
+                    // Рисуем только если центр в пределах области графика
+                    if (xCenter >= chartArea.left && xCenter <= chartArea.right) {
+                        ctx.fillText(seg.year, xCenter, y);
+                    }
+                });
+
+                ctx.restore();
+            }
+        };
+
+        // ----- Плагин 3: пунктирные линии max/min + плашки на оси Y -----
         const minMaxLinesPlugin = {
             id: 'minMaxLines',
             afterDatasetsDraw(chart) {
@@ -322,7 +353,6 @@
                 ctx.setLineDash([3, 3]);
                 ctx.lineWidth = 1.5;
 
-                // Полупрозрачные линии (50% альфа)
                 ctx.strokeStyle = hexToRgba(colorForWeight(chart._maxWeight), 0.5);
                 ctx.beginPath();
                 ctx.moveTo(chartArea.left, yMax);
@@ -370,7 +400,6 @@
                     ctx.restore();
                 };
 
-                // Плашки остаются полностью непрозрачными (100% цвет)
                 drawBadge(chart._maxWeight, colorForWeight(chart._maxWeight));
                 drawBadge(chart._minWeight, colorForWeight(chart._minWeight));
             }
@@ -475,6 +504,26 @@
                     idx++;
                 }
 
+                // ----- Сегменты годов (начало-конец в индексах) -----
+                const yearSegments = [];
+                let curYear = null;
+                let startIdx = 0;
+
+                for (let i = 0; i < dates.length; i++) {
+                    const y = dates[i].getFullYear();
+                    if (curYear === null) {
+                        curYear = y;
+                        startIdx = i;
+                    } else if (y !== curYear) {
+                        yearSegments.push({ year: curYear, startIdx: startIdx, endIdx: i - 1 });
+                        curYear = y;
+                        startIdx = i;
+                    }
+                }
+                if (curYear !== null) {
+                    yearSegments.push({ year: curYear, startIdx: startIdx, endIdx: dates.length - 1 });
+                }
+
                 let maxWeight = null, minWeight = null;
                 let maxDate = null, minDate = null;
                 let firstRealDate = null, lastRealDate = null;
@@ -507,7 +556,7 @@
                     minWeight, minDate
                 });
 
-                createChart(labels, weights, maxWeight, maxDate, minWeight, minDate, jan1Indices);
+                createChart(labels, weights, maxWeight, maxDate, minWeight, minDate, jan1Indices, yearSegments);
 
             } catch (error) {
                 console.error('Ошибка:', error);
@@ -561,7 +610,7 @@
             }
         }
 
-        function createChart(labels, data, maxWeight, maxDate, minWeight, minDate, jan1Indices) {
+        function createChart(labels, data, maxWeight, maxDate, minWeight, minDate, jan1Indices, yearSegments) {
             if (chart) {
                 chart.destroy();
                 chart = null;
@@ -572,7 +621,7 @@
 
             chart = new Chart(ctx, {
                 type: 'bar',
-                plugins: [yearLinesPlugin, minMaxLinesPlugin],
+                plugins: [yearLinesPlugin, minMaxLinesPlugin, yearLabelsPlugin],
                 data: {
                     labels: labels,
                     datasets: [{
@@ -591,6 +640,9 @@
                     maintainAspectRatio: false,
                     animation: { duration: 500, easing: 'easeOutQuart' },
                     interaction: { mode: 'index', intersect: false },
+                    layout: {
+                        padding: { top: 20 } // запас сверху для подписей годов
+                    },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
@@ -656,6 +708,7 @@
             chart._minWeight = minWeight;
             chart._minDate = minDate;
             chart._jan1Indices = jan1Indices;
+            chart._yearSegments = yearSegments;
 
             window.weightChartInstance = chart;
             attachHoverHandlers();
