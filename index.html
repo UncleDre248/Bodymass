@@ -34,7 +34,7 @@
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 15px;
-            margin: 0 0 15px;
+            margin: 0 0 20px;
             flex-shrink: 0;
         }
         @media (max-width: 720px) {
@@ -86,34 +86,6 @@
             color: #8aa0b4;
             margin-top: 4px;
             white-space: nowrap;
-        }
-        .filter-bar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin: 0 0 15px;
-            flex-shrink: 0;
-        }
-        .filter-btn {
-            background: #1e2a3a;
-            color: #c8d8e8;
-            border: 1px solid #2c3a4f;
-            padding: 7px 12px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.15s, transform 0.1s, border-color 0.15s;
-            white-space: nowrap;
-        }
-        .filter-btn:hover {
-            background: #243447;
-            transform: translateY(-1px);
-        }
-        .filter-btn.active {
-            background: #4db8ff;
-            color: #001236;
-            border-color: #4db8ff;
         }
         .chart-container {
             position: relative;
@@ -189,7 +161,6 @@
                     <p id="totalChange">--</p>
                 </div>
             </div>
-            <div class="filter-bar" id="filterBar"></div>
             <div class="chart-container" id="chartContainer">
                 <canvas id="weightChart"></canvas>
                 <div id="hoverTooltip">
@@ -345,11 +316,6 @@
             }
         };
 
-        // Глобальные данные
-        let ALL_LABELS = [];
-        let ALL_WEIGHTS = [];
-        let ALL_DATES = [];
-        let CURRENT_FILTER = 'all';
         let chart = null;
 
         async function loadData() {
@@ -431,22 +397,32 @@
                 const firstDate = new Date(sortedKeys[0] + 'T00:00:00');
                 const lastDate  = new Date(sortedKeys[sortedKeys.length - 1] + 'T00:00:00');
 
-                ALL_LABELS = [];
-                ALL_WEIGHTS = [];
-                ALL_DATES = [];
+                const labels = [];
+                const weights = [];
+                const dates = [];
 
                 for (let d = new Date(firstDate); d <= lastDate; d.setDate(d.getDate() + 1)) {
                     const key = d.toISOString().slice(0, 10);
-                    ALL_LABELS.push(formatDateShort(d));
-                    ALL_DATES.push(new Date(d));
-                    ALL_WEIGHTS.push(dataByDay[key] !== undefined ? dataByDay[key].weight : 0);
+                    labels.push(formatDateShort(d));
+                    dates.push(new Date(d));
+                    weights.push(dataByDay[key] !== undefined ? dataByDay[key].weight : 0);
+                }
+
+                let maxWeight = null, minWeight = null;
+                let maxDate = null, minDate = null;
+
+                for (let i = 0; i < weights.length; i++) {
+                    const w = weights[i];
+                    if (w <= 0) continue;
+                    if (maxWeight === null || w > maxWeight) { maxWeight = w; maxDate = dates[i]; }
+                    if (minWeight === null || w < minWeight) { minWeight = w; minDate = dates[i]; }
                 }
 
                 loadingEl.style.display = 'none';
                 dashboardEl.style.display = 'block';
 
-                buildFilterButtons();
-                applyFilter('all');
+                updateStats(weights, maxWeight, maxDate, minWeight, minDate);
+                createChart(labels, weights, maxWeight, maxDate, minWeight, minDate);
 
             } catch (error) {
                 console.error('Ошибка:', error);
@@ -454,58 +430,6 @@
                 errorEl.style.display = 'block';
                 errorEl.textContent = 'Не удалось загрузить данные: ' + error.message;
             }
-        }
-
-        function buildFilterButtons() {
-            const bar = document.getElementById('filterBar');
-            bar.innerHTML = '';
-            const ranges = ['all', '69', '70', '71', '72', '73', '74', '75', '76'];
-
-            ranges.forEach(key => {
-                const btn = document.createElement('button');
-                btn.className = 'filter-btn';
-                btn.dataset.range = key;
-                if (key === 'all') btn.textContent = 'Все';
-                else if (key === '76') btn.textContent = '76+';
-                else btn.textContent = `${key}–${key}.9`;
-
-                btn.addEventListener('click', () => applyFilter(key));
-                bar.appendChild(btn);
-            });
-        }
-
-        function applyFilter(rangeKey) {
-            CURRENT_FILTER = rangeKey;
-
-            document.querySelectorAll('.filter-btn').forEach(b => {
-                b.classList.toggle('active', b.dataset.range === rangeKey);
-            });
-
-            // Фильтруем веса
-            let filteredWeights;
-            if (rangeKey === 'all') {
-                filteredWeights = ALL_WEIGHTS.slice();
-            } else {
-                const n = parseInt(rangeKey);
-                filteredWeights = ALL_WEIGHTS.map(w => {
-                    if (w <= 0) return 0;
-                    return Math.floor(w) === n ? w : 0;
-                });
-            }
-
-            // Ищем max/min по отфильтрованным
-            let maxWeight = null, minWeight = null;
-            let maxDate = null, minDate = null;
-
-            for (let i = 0; i < filteredWeights.length; i++) {
-                const w = filteredWeights[i];
-                if (w <= 0) continue;
-                if (maxWeight === null || w > maxWeight) { maxWeight = w; maxDate = ALL_DATES[i]; }
-                if (minWeight === null || w < minWeight) { minWeight = w; minDate = ALL_DATES[i]; }
-            }
-
-            updateStats(filteredWeights, maxWeight, maxDate, minWeight, minDate);
-            rebuildChart(filteredWeights, maxWeight, maxDate, minWeight, minDate);
         }
 
         function updateStats(weights, maxWeight, maxDate, minWeight, minDate) {
@@ -537,37 +461,30 @@
             if (maxWeight !== null) {
                 maxEl.innerHTML = maxWeight.toFixed(1) + ' кг<small>' + formatDateShort(maxDate) + '</small>';
                 maxEl.style.color = colorForWeight(maxWeight);
-            } else {
-                maxEl.textContent = '--';
             }
-
             if (minWeight !== null) {
                 minEl.innerHTML = minWeight.toFixed(1) + ' кг<small>' + formatDateShort(minDate) + '</small>';
                 minEl.style.color = colorForWeight(minWeight);
-            } else {
-                minEl.textContent = '--';
             }
         }
 
-        // ---------- Полное пересоздание графика при каждой смене фильтра ----------
-        function rebuildChart(weights, maxWeight, maxDate, minWeight, minDate) {
-            // Уничтожаем старый экземпляр
+        function createChart(labels, data, maxWeight, maxDate, minWeight, minDate) {
             if (chart) {
                 chart.destroy();
                 chart = null;
             }
 
             const ctx = document.getElementById('weightChart').getContext('2d');
-            const barColors = weights.map(w => w > 0 ? colorForWeight(w) : 'transparent');
+            const barColors = data.map(w => w > 0 ? colorForWeight(w) : 'transparent');
 
             chart = new Chart(ctx, {
                 type: 'bar',
                 plugins: [minMaxLinesPlugin],
                 data: {
-                    labels: ALL_LABELS,
+                    labels: labels,
                     datasets: [{
                         label: 'Масса тела (кг)',
-                        data: weights,
+                        data: data,
                         backgroundColor: barColors,
                         borderColor: barColors,
                         borderWidth: 0,
@@ -579,7 +496,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    animation: { duration: 400, easing: 'easeOutQuart' },
+                    animation: { duration: 500, easing: 'easeOutQuart' },
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: { display: false },
@@ -650,31 +567,21 @@
             attachHoverHandlers();
         }
 
-        // ---------- Ховер-тултип на пунктирных линиях ----------
         function attachHoverHandlers() {
             const container = document.getElementById('chartContainer');
             const tooltipEl = document.getElementById('hoverTooltip');
             const dateEl = tooltipEl.querySelector('.tip-date');
             const valueEl = tooltipEl.querySelector('.tip-value');
 
-            // Убираем старые обработчики (клон + replace, чтобы избежать накопления)
-            const newContainer = container.cloneNode(false);
-            while (container.firstChild) newContainer.appendChild(container.firstChild);
-            container.parentNode.replaceChild(newContainer, container);
-
-            // Возвращаем ссылки
-            const c = document.getElementById('chartContainer');
-            const tEl = document.getElementById('hoverTooltip');
-
             let currentHoverKey = null;
 
-            c.addEventListener('mousemove', (e) => {
+            container.addEventListener('mousemove', (e) => {
                 if (!chart || chart._maxWeight == null || chart._minWeight == null) {
-                    tEl.style.display = 'none';
+                    tooltipEl.style.display = 'none';
                     return;
                 }
 
-                const rect = c.getBoundingClientRect();
+                const rect = container.getBoundingClientRect();
                 const mouseX = e.clientX - rect.left;
                 const mouseY = e.clientY - rect.top;
 
@@ -692,7 +599,7 @@
                 if (!isInside) {
                     if (currentHoverKey !== null) {
                         currentHoverKey = null;
-                        tEl.style.display = 'none';
+                        tooltipEl.style.display = 'none';
                         chart.canvas.style.cursor = 'default';
                     }
                     return;
@@ -705,7 +612,7 @@
                 if (!nearMax && !nearMin) {
                     if (currentHoverKey !== null) {
                         currentHoverKey = null;
-                        tEl.style.display = 'none';
+                        tooltipEl.style.display = 'none';
                         chart.canvas.style.cursor = 'default';
                     }
                     return;
@@ -727,31 +634,31 @@
                 dateEl.textContent = formatDateShort(date);
                 valueEl.textContent = weight.toFixed(1) + ' кг';
                 valueEl.style.color = colorForWeight(weight);
-                tEl.style.borderColor = colorForWeight(weight);
-                tEl.style.display = 'block';
+                tooltipEl.style.borderColor = colorForWeight(weight);
+                tooltipEl.style.display = 'block';
                 chart.canvas.style.cursor = 'pointer';
 
                 moveTooltip(mouseX, mouseY);
             });
 
             function moveTooltip(mx, my) {
-                const rect = c.getBoundingClientRect();
-                const tipRect = tEl.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+                const tipRect = tooltipEl.getBoundingClientRect();
                 const pad = 14;
 
                 let left = mx + pad;
                 let top = my + pad;
 
-                if (left + tipRect.width > rect.width) left = mx - tipRect.width - pad;
-                if (top + tipRect.height > rect.height) top = my - tipRect.height - pad;
+                if (left + tipRect.width > containerRect.width) left = mx - tipRect.width - pad;
+                if (top + tipRect.height > containerRect.height) top = my - tipRect.height - pad;
 
-                tEl.style.left = left + 'px';
-                tEl.style.top = top + 'px';
+                tooltipEl.style.left = left + 'px';
+                tooltipEl.style.top = top + 'px';
             }
 
-            c.addEventListener('mouseleave', () => {
+            container.addEventListener('mouseleave', () => {
                 currentHoverKey = null;
-                tEl.style.display = 'none';
+                tooltipEl.style.display = 'none';
                 chart.canvas.style.cursor = 'default';
             });
         }
