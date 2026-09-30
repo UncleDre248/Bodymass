@@ -195,6 +195,11 @@
     <script>
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRCxUQ2eWCaI8HwAvEFRVc1VzXgjun4Gkx5K6vk3x7dHyKaaq_GHatCTUMkh2vb2EYIWCtVUmnLnPiE/pub?output=csv';
 
+        const MONTHS_RU = [
+            'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+            'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+        ];
+
         const RANGE_COLORS = {
             69: '#1F9E1F',
             70: '#66FF66',
@@ -315,7 +320,6 @@
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'bottom';
 
-                // Подняли на 13, теперь опускаем на 3 → итог top - 10
                 const y = chartArea.top - 10;
 
                 chart._yearSegments.forEach(seg => {
@@ -491,6 +495,7 @@
                 let idx = 0;
                 for (let d = new Date(firstDate); d <= lastDate; d.setDate(d.getDate() + 1)) {
                     const key = d.toISOString().slice(0, 10);
+                    // label используется только для tooltip (остался ДД.ММ.ГГ.)
                     labels.push(formatDateShort(d));
                     dates.push(new Date(d));
                     weights.push(dataByDay[key] !== undefined ? dataByDay[key].weight : 0);
@@ -501,6 +506,7 @@
                     idx++;
                 }
 
+                // Сегменты годов (для подписей годов сверху)
                 const yearSegments = [];
                 let curYear = null;
                 let startIdx = 0;
@@ -518,6 +524,37 @@
                 }
                 if (curYear !== null) {
                     yearSegments.push({ year: curYear, startIdx: startIdx, endIdx: dates.length - 1 });
+                }
+
+                // Сегменты месяцев (для подписей под осью X)
+                const monthSegments = [];
+                let curMonthKey = null;
+                let mStartIdx = 0;
+
+                for (let i = 0; i < dates.length; i++) {
+                    const d = dates[i];
+                    const key = d.getFullYear() * 100 + d.getMonth();
+                    if (curMonthKey === null) {
+                        curMonthKey = key;
+                        mStartIdx = i;
+                    } else if (key !== curMonthKey) {
+                        monthSegments.push({
+                            year: dates[mStartIdx].getFullYear(),
+                            month: dates[mStartIdx].getMonth(),
+                            startIdx: mStartIdx,
+                            endIdx: i - 1
+                        });
+                        curMonthKey = key;
+                        mStartIdx = i;
+                    }
+                }
+                if (curMonthKey !== null) {
+                    monthSegments.push({
+                        year: dates[mStartIdx].getFullYear(),
+                        month: dates[mStartIdx].getMonth(),
+                        startIdx: mStartIdx,
+                        endIdx: dates.length - 1
+                    });
                 }
 
                 let maxWeight = null, minWeight = null;
@@ -552,7 +589,8 @@
                     minWeight, minDate
                 });
 
-                createChart(labels, weights, maxWeight, maxDate, minWeight, minDate, jan1Indices, yearSegments);
+                createChart(labels, weights, maxWeight, maxDate, minWeight, minDate,
+                            jan1Indices, yearSegments, monthSegments);
 
             } catch (error) {
                 console.error('Ошибка:', error);
@@ -606,7 +644,8 @@
             }
         }
 
-        function createChart(labels, data, maxWeight, maxDate, minWeight, minDate, jan1Indices, yearSegments) {
+        function createChart(labels, data, maxWeight, maxDate, minWeight, minDate,
+                             jan1Indices, yearSegments, monthSegments) {
             if (chart) {
                 chart.destroy();
                 chart = null;
@@ -637,7 +676,7 @@
                     animation: { duration: 500, easing: 'easeOutQuart' },
                     interaction: { mode: 'index', intersect: false },
                     layout: {
-                        padding: { top: 30 }
+                        padding: { top: 30, bottom: 40 } // снизу запас под подписи месяцев
                     },
                     plugins: {
                         legend: { display: false },
@@ -681,18 +720,12 @@
                                 font: { size: 10 }
                             },
                             grid: { display: false },
+                            // Отключаем стандартные подписи — свои нарисуем плагином
                             ticks: {
-                                color: '#c8d8e8',
-                                maxRotation: 90,
-                                minRotation: 90,
+                                display: false,
                                 autoSkip: false,
-                                font: { size: 10 },
-                                callback: function(value) {
-                                    const label = this.getLabelForValue(value);
-                                    const parts = label.split('.');
-                                    if (parts.length !== 3) return '';
-                                    return parts[0] === '01' ? label : '';
-                                }
+                                maxRotation: 0,
+                                minRotation: 0
                             }
                         }
                     }
@@ -705,10 +738,44 @@
             chart._minDate = minDate;
             chart._jan1Indices = jan1Indices;
             chart._yearSegments = yearSegments;
+            chart._monthSegments = monthSegments;
 
             window.weightChartInstance = chart;
             attachHoverHandlers();
         }
+
+        // ----- Плагин подписей месяцев под осью X -----
+        const monthLabelsPlugin = {
+            id: 'monthLabels',
+            afterDraw(chart) {
+                const { ctx, chartArea, scales } = chart;
+                if (!chartArea) return;
+                if (!chart._monthSegments || chart._monthSegments.length === 0) return;
+
+                const xScale = scales.x;
+                ctx.save();
+                ctx.font = 'bold 10px Inter, sans-serif';
+                ctx.fillStyle = 'rgba(200, 216, 232, 0.75)';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+
+                const y = chartArea.bottom + 8;
+
+                chart._monthSegments.forEach(seg => {
+                    const xStart = xScale.getPixelForValue(seg.startIdx);
+                    const xEnd   = xScale.getPixelForValue(seg.endIdx);
+                    const xCenter = (xStart + xEnd) / 2;
+
+                    // Рисуем, только если центр в пределах области графика
+                    if (xCenter >= chartArea.left && xCenter <= chartArea.right) {
+                        const label = MONTHS_RU[seg.month] + ' ' + seg.year;
+                        ctx.fillText(label, xCenter, y);
+                    }
+                });
+
+                ctx.restore();
+            }
+        };
 
         function attachHoverHandlers() {
             const container = document.getElementById('chartContainer');
@@ -807,6 +874,40 @@
         }
 
         window.onload = loadData;
+    </script>
+
+    <!-- Регистрируем плагин подписей месяцев -->
+    <script>
+        Chart.register({
+            id: 'monthLabels',
+            afterDraw(chart) {
+                const { ctx, chartArea, scales } = chart;
+                if (!chartArea) return;
+                if (!chart._monthSegments || chart._monthSegments.length === 0) return;
+
+                const xScale = scales.x;
+                ctx.save();
+                ctx.font = 'bold 10px Inter, sans-serif';
+                ctx.fillStyle = 'rgba(200, 216, 232, 0.75)';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+
+                const y = chartArea.bottom + 8;
+
+                chart._monthSegments.forEach(seg => {
+                    const xStart = xScale.getPixelForValue(seg.startIdx);
+                    const xEnd   = xScale.getPixelForValue(seg.endIdx);
+                    const xCenter = (xStart + xEnd) / 2;
+
+                    if (xCenter >= chartArea.left && xCenter <= chartArea.right) {
+                        const label = MONTHS_RU[seg.month] + ' ' + seg.year;
+                        ctx.fillText(label, xCenter, y);
+                    }
+                });
+
+                ctx.restore();
+            }
+        });
     </script>
 </body>
 </html>
