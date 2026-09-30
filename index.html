@@ -267,6 +267,34 @@
             ctx.closePath();
         }
 
+        // ----- Плагин 1: вертикальные линии на 1 января — ЗА гистограммой -----
+        const yearLinesPlugin = {
+            id: 'yearLines',
+            beforeDatasetsDraw(chart) {
+                const { ctx, chartArea, scales } = chart;
+                if (!chartArea) return;
+                if (!chart._jan1Indices || chart._jan1Indices.length === 0) return;
+
+                const xScale = scales.x;
+                ctx.save();
+                ctx.setLineDash([]); // сплошная
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = 'rgba(200, 216, 232, 0.25)';
+
+                chart._jan1Indices.forEach(idx => {
+                    const x = xScale.getPixelForValue(idx);
+                    if (x >= chartArea.left && x <= chartArea.right) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, chartArea.top);
+                        ctx.lineTo(x, chartArea.bottom);
+                        ctx.stroke();
+                    }
+                });
+                ctx.restore();
+            }
+        };
+
+        // ----- Плагин 2: пунктирные линии max/min + плашки на оси Y -----
         const minMaxLinesPlugin = {
             id: 'minMaxLines',
             afterDatasetsDraw(chart) {
@@ -302,28 +330,6 @@
             afterDraw(chart) {
                 const { ctx, chartArea, scales } = chart;
                 if (!chartArea) return;
-
-                // ----- Вертикальные линии на 1 января -----
-                if (chart._jan1Indices && chart._jan1Indices.length > 0) {
-                    const xScale = scales.x;
-                    ctx.save();
-                    ctx.setLineDash([4, 4]);
-                    ctx.lineWidth = 1;
-                    ctx.strokeStyle = 'rgba(200, 216, 232, 0.35)';
-
-                    chart._jan1Indices.forEach(idx => {
-                        const x = xScale.getPixelForValue(idx);
-                        if (x >= chartArea.left && x <= chartArea.right) {
-                            ctx.beginPath();
-                            ctx.moveTo(x, chartArea.top);
-                            ctx.lineTo(x, chartArea.bottom);
-                            ctx.stroke();
-                        }
-                    });
-                    ctx.restore();
-                }
-
-                // ----- Плашки max/min на оси Y -----
                 if (chart._maxWeight == null || chart._minWeight == null) return;
 
                 const yScale = scales.y;
@@ -452,7 +458,6 @@
                     dates.push(new Date(d));
                     weights.push(dataByDay[key] !== undefined ? dataByDay[key].weight : 0);
 
-                    // Запоминаем индексы 1 января
                     if (d.getMonth() === 0 && d.getDate() === 1) {
                         jan1Indices.push(idx);
                     }
@@ -556,7 +561,7 @@
 
             chart = new Chart(ctx, {
                 type: 'bar',
-                plugins: [minMaxLinesPlugin],
+                plugins: [yearLinesPlugin, minMaxLinesPlugin],
                 data: {
                     labels: labels,
                     datasets: [{
