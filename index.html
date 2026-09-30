@@ -346,39 +346,6 @@
             }
         };
 
-        const yearLabelsPlugin = {
-            id: 'yearLabels',
-            afterDraw(chart) {
-                const { ctx, chartArea, scales } = chart;
-                if (!chartArea) return;
-                if (!chart._yearSegments || chart._yearSegments.length === 0) return;
-
-                const xScale = scales.x;
-                const chartWidth = chartArea.right - chartArea.left;
-                const fontPx = chartWidth < 400 ? 9 : 11;
-
-                ctx.save();
-                ctx.font = `bold ${fontPx}px Inter, sans-serif`;
-                ctx.fillStyle = 'rgba(200, 216, 232, 0.55)';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'bottom';
-
-                const y = chartArea.top - 10;
-
-                chart._yearSegments.forEach(seg => {
-                    const xStart = xScale.getPixelForValue(seg.startIdx);
-                    const xEnd   = xScale.getPixelForValue(seg.endIdx);
-                    const xCenter = (xStart + xEnd) / 2;
-
-                    if (xCenter >= chartArea.left && xCenter <= chartArea.right) {
-                        ctx.fillText(seg.year, xCenter, y);
-                    }
-                });
-
-                ctx.restore();
-            }
-        };
-
         const minMaxLinesPlugin = {
             id: 'minMaxLines',
             afterDatasetsDraw(chart) {
@@ -451,7 +418,7 @@
             }
         };
 
-        // ----- Плагин подписей месяцев: только 3 буквы, без года -----
+        // ----- Плагин подписей месяцев: 3 буквы, вертикально, снизу вверх -----
         const monthLabelsPlugin = {
             id: 'monthLabels',
             afterDraw(chart) {
@@ -476,7 +443,6 @@
                     const xCenter = (xStart + xEnd) / 2;
 
                     if (xCenter >= chartArea.left && xCenter <= chartArea.right) {
-                        // Только название месяца, без года
                         const label = MONTHS_RU[seg.month];
 
                         ctx.save();
@@ -486,6 +452,46 @@
                         ctx.textBaseline = 'middle';
                         ctx.fillText(label, 0, 0);
                         ctx.restore();
+                    }
+                });
+
+                ctx.restore();
+            }
+        };
+
+        // ----- Плагин подписей годов: теперь внизу, под месяцами -----
+        const yearLabelsPlugin = {
+            id: 'yearLabels',
+            afterDraw(chart) {
+                const { ctx, chartArea, scales } = chart;
+                if (!chartArea) return;
+                if (!chart._yearSegments || chart._yearSegments.length === 0) return;
+
+                const xScale = scales.x;
+                const chartWidth = chartArea.right - chartArea.left;
+                const isSmall = chartWidth < 400;
+
+                const fontPx = isSmall ? 9 : 11;
+                // Отступ от низа области графика до подписей годов.
+                // Месяцы рисуются на chartArea.bottom + 4 (или +2), длиной ~55-60px.
+                // Годы идут ещё ниже — в самом низу поля диаграммы.
+                const offset = isSmall ? 55 : 62;
+
+                ctx.save();
+                ctx.font = `bold ${fontPx}px Inter, sans-serif`;
+                ctx.fillStyle = 'rgba(200, 216, 232, 0.55)';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+
+                const y = chartArea.bottom + offset;
+
+                chart._yearSegments.forEach(seg => {
+                    const xStart = xScale.getPixelForValue(seg.startIdx);
+                    const xEnd   = xScale.getPixelForValue(seg.endIdx);
+                    const xCenter = (xStart + xEnd) / 2;
+
+                    if (xCenter >= chartArea.left && xCenter <= chartArea.right) {
+                        ctx.fillText(seg.year, xCenter, y);
                     }
                 });
 
@@ -741,8 +747,12 @@
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
 
-            const padTop = isLandscapePhone ? 14 : (isSmall ? 18 : 22);
-            const padBottom = isLandscapePhone ? 40 : (isSmall ? 50 : 60);
+            // Верхний отступ теперь маленький — только небольшой зазор сверху,
+            // так как годы переехали вниз.
+            const padTop = isLandscapePhone ? 8 : (isSmall ? 10 : 12);
+
+            // Нижний отступ увеличен — под месяцы (≈60px) + годы (≈20px) + зазор.
+            const padBottom = isLandscapePhone ? 70 : (isSmall ? 80 : 90);
 
             chart = new Chart(ctx, {
                 type: 'bar',
