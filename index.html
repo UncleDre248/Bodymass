@@ -20,14 +20,14 @@
             background-color: #0f1720;
             color: #e8eef5;
             display: flex;
-            padding: 16px;
+            padding: 12px;
         }
         .container {
             flex: 1;
             display: flex;
             flex-direction: column;
             background: #1a2332;
-            padding: 20px;
+            padding: 12px;
             border-radius: 16px;
             box-shadow: 0 4px 18px rgba(0,0,0,0.5);
             min-height: 0;
@@ -36,14 +36,14 @@
         .stats {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 12px;
-            margin: 0 0 20px;
+            gap: 10px;
+            margin: 0 0 10px;
             flex-shrink: 0;
         }
         .stat-item {
             background: linear-gradient(135deg, #1e2a3a 0%, #243447 100%);
-            padding: 9px 10px;
-            border-radius: 12px;
+            padding: 7px 8px;
+            border-radius: 10px;
             text-align: center;
             transition: transform 0.25s, box-shadow 0.25s;
             opacity: 0;
@@ -56,12 +56,12 @@
         .stat-item:nth-child(4) { animation-delay: 0.20s; }
         .stat-item:nth-child(5) { animation-delay: 0.25s; }
         .stat-item:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.35);
         }
         .stat-item h3 {
-            margin: 0 0 6px;
-            font-size: 11px;
+            margin: 0 0 4px;
+            font-size: 10px;
             color: #8aa0b4;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -72,7 +72,7 @@
         }
         .stat-item p {
             margin: 0;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             color: #4db8ff;
             white-space: nowrap;
@@ -86,21 +86,20 @@
         }
         .stat-item p small {
             display: block;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 500;
             color: #8aa0b4;
-            margin-top: 4px;
+            margin-top: 2px;
             white-space: nowrap;
         }
         .chart-container {
             position: relative;
             width: 100%;
             flex: 1;
-            /* Высота увеличена — диаграмма растянулась вниз, ось X опустилась */
-            min-height: 300px;
+            min-height: 200px;
             background-color: #0a1018;
             border-radius: 12px;
-            padding: 10px;
+            padding: 6px;
             min-width: 0;
         }
         #loading, #error {
@@ -128,55 +127,45 @@
 
         /* ============ АДАПТИВ ============ */
         @media (max-width: 1100px) {
-            .stat-item p { font-size: 18px; }
-            .stat-item h3 { font-size: 10px; }
+            .stat-item p { font-size: 17px; }
         }
         @media (max-width: 900px) {
             .stats {
                 grid-template-columns: repeat(3, 1fr);
-                gap: 10px;
-                margin-bottom: 14px;
+                gap: 8px;
+                margin-bottom: 8px;
             }
-            .stat-item { padding: 8px 8px; }
-            .stat-item p { font-size: 18px; }
-            .stat-item p small { font-size: 10px; }
+            .stat-item p { font-size: 17px; }
         }
         @media (max-width: 600px) {
-            body { padding: 8px; }
-            .container { padding: 12px; border-radius: 12px; }
+            body { padding: 6px; }
+            .container { padding: 8px; border-radius: 12px; }
             .stats {
                 grid-template-columns: repeat(2, 1fr);
-                gap: 8px;
-                margin-bottom: 10px;
+                gap: 6px;
+                margin-bottom: 6px;
             }
-            .stat-item { padding: 7px 6px; border-radius: 10px; }
+            .stat-item { padding: 6px 6px; border-radius: 8px; }
             .stat-item h3 {
                 font-size: 9px;
                 letter-spacing: 0.5px;
-                margin-bottom: 4px;
+                margin-bottom: 3px;
             }
-            .stat-item p { font-size: 16px; }
-            .stat-item p small { font-size: 9px; margin-top: 2px; }
-            .chart-container { padding: 6px; border-radius: 8px; min-height: 270px; }
-        }
-        @media (max-width: 380px) {
-            .stat-item p { font-size: 14px; }
-            .stat-item h3 { font-size: 8px; }
-        }
-        @media (max-width: 600px) and (orientation: portrait) {
-            .chart-container { min-height: 300px; }
+            .stat-item p { font-size: 15px; }
+            .stat-item p small { font-size: 9px; }
+            .chart-container { padding: 4px; min-height: 200px; }
         }
         @media (max-width: 900px) and (orientation: landscape) {
             .stats {
                 grid-template-columns: repeat(5, 1fr);
-                gap: 6px;
-                margin-bottom: 8px;
+                gap: 5px;
+                margin-bottom: 6px;
             }
-            .stat-item { padding: 5px 4px; }
-            .stat-item h3 { font-size: 8px; margin-bottom: 2px; }
-            .stat-item p { font-size: 14px; }
-            .stat-item p small { font-size: 8px; margin-top: 1px; }
-            .chart-container { min-height: 240px; }
+            .stat-item { padding: 4px 3px; }
+            .stat-item h3 { font-size: 8px; margin-bottom: 1px; }
+            .stat-item p { font-size: 13px; }
+            .stat-item p small { font-size: 8px; }
+            .chart-container { min-height: 180px; }
         }
     </style>
 </head>
@@ -431,7 +420,7 @@
                 const isSmall = chartWidth < 400;
 
                 const fontPx = isSmall ? 8 : 10;
-                const offset = isSmall ? 7 : 9;
+                const offset = isSmall ? 6 : 8;
 
                 ctx.save();
                 ctx.font = `bold ${fontPx}px Inter, sans-serif`;
@@ -459,6 +448,8 @@
             }
         };
 
+        // Годы рисуются сразу под месяцами — offset уменьшен с 62/55 до 42/38.
+        // Это приблизило годы к горизонтальной оси X и опустило их ниже.
         const yearLabelsPlugin = {
             id: 'yearLabels',
             afterDraw(chart) {
@@ -471,7 +462,7 @@
                 const isSmall = chartWidth < 400;
 
                 const fontPx = isSmall ? 9 : 11;
-                const offset = isSmall ? 55 : 62;
+                const offset = isSmall ? 38 : 42;
 
                 ctx.save();
                 ctx.font = `bold ${fontPx}px Inter, sans-serif`;
@@ -743,8 +734,13 @@
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
 
-            const padTop = isLandscapePhone ? 8 : (isSmall ? 10 : 12);
-            const padBottom = isLandscapePhone ? 77 : (isSmall ? 82 : 91);
+            // Верхний отступ — минимальный, чтобы область графика была выше.
+            const padTop = isLandscapePhone ? 6 : (isSmall ? 8 : 10);
+
+            // Нижний отступ — достаточный для месяцев (≈55px) + годы с новым offset ≈42 + запас.
+            // Годы теперь ближе к оси X (offset = 42/38), поэтому padBottom можно уменьшить:
+            //   42 (годы) + 14 (высота года) + 10 (запас) = 66 → берём 70/65/60.
+            const padBottom = isLandscapePhone ? 60 : (isSmall ? 65 : 70);
             const padLeft = 12;
             const padRight = 12;
 
