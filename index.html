@@ -232,9 +232,8 @@
             76: '#B20000'
         };
 
-        // Сдвиг горизонтальной оси вниз, в пикселях.
-        // Было 10, стало 20 — ось опустилась ещё на 10px.
-        const X_AXIS_DOWN_SHIFT = 20;
+        // Сдвиг оси X вниз делается уменьшением padBottom на это значение.
+        const X_AXIS_DOWN_SHIFT = 10;
 
         function colorForWeight(w) {
             const key = Math.floor(w);
@@ -462,7 +461,8 @@
             }
         };
 
-        // Годы компенсируют сдвиг оси X и остаются на прежнем уровне.
+        // Годы рисуются от фиксированной базы, которая запоминается
+        // при первом рендере и не меняется при последующих.
         const yearLabelsPlugin = {
             id: 'yearLabels',
             afterDraw(chart) {
@@ -477,7 +477,11 @@
                 const fontPx = isSmall ? 9 : 11;
                 const offset = isSmall ? 55 : 62;
 
-                const baseY = chartArea.bottom - X_AXIS_DOWN_SHIFT;
+                // Запоминаем базовую Y один раз.
+                if (chart._yearBaseY === undefined) {
+                    chart._yearBaseY = chartArea.bottom;
+                }
+                const baseY = chart._yearBaseY;
                 const y = baseY + offset;
 
                 ctx.save();
@@ -748,13 +752,14 @@
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
 
-            // Верхний отступ увеличен на X_AXIS_DOWN_SHIFT (теперь 20px),
-            // чтобы область графика сместилась вниз и ось X опустилась.
-            const basePadTop = isLandscapePhone ? 8 : (isSmall ? 10 : 12);
-            const padTop = basePadTop + X_AXIS_DOWN_SHIFT;
+            // Верхний отступ — обычный.
+            const padTop = isLandscapePhone ? 8 : (isSmall ? 10 : 12);
 
-            // Нижний отступ — тоже увеличен на 10, потому что ось ушла ниже.
-            const padBottom = isLandscapePhone ? 77 : (isSmall ? 82 : 91);
+            // Нижний отступ — уменьшен на X_AXIS_DOWN_SHIFT, чтобы нижняя
+            // граница области графика (ось X) опустилась на нужное число пикселей.
+            const basePadBottom = isLandscapePhone ? 87 : (isSmall ? 92 : 101);
+            const padBottom = basePadBottom - X_AXIS_DOWN_SHIFT;
+
             const padLeft = 12;
             const padRight = 12;
 
