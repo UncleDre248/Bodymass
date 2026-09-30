@@ -742,11 +742,10 @@
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
 
-            // Верхний отступ — 12/10/8.
-            // Нижний отступ увеличен, чтобы вместить: месяцы (≈60px) + годы (≈20px)
-            // + небольшой запас. Итого 90 (большой) / 80 (маленький) / 75 (альбом).
+            // Нижний отступ уменьшен на ~10%:
+            // было 90 / 80 / 75 → стало 81 / 72 / 67
             const padTop = isLandscapePhone ? 8 : (isSmall ? 10 : 12);
-            const padBottom = isLandscapePhone ? 75 : (isSmall ? 80 : 90);
+            const padBottom = isLandscapePhone ? 67 : (isSmall ? 72 : 81);
             const padLeft = 12;
             const padRight = 12;
 
