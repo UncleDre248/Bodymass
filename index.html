@@ -42,7 +42,8 @@
         }
         .stat-item {
             background: linear-gradient(135deg, #1e2a3a 0%, #243447 100%);
-            padding: 12px 10px;
+            /* Высота уменьшена примерно на 20% (было 12px 10px) */
+            padding: 9px 10px;
             border-radius: 12px;
             text-align: center;
             transition: transform 0.25s, box-shadow 0.25s;
@@ -136,7 +137,7 @@
                 gap: 10px;
                 margin-bottom: 14px;
             }
-            .stat-item { padding: 10px 8px; }
+            .stat-item { padding: 8px 8px; }
             .stat-item p { font-size: 18px; }
             .stat-item p small { font-size: 10px; }
         }
@@ -148,7 +149,7 @@
                 gap: 8px;
                 margin-bottom: 10px;
             }
-            .stat-item { padding: 8px 6px; border-radius: 10px; }
+            .stat-item { padding: 7px 6px; border-radius: 10px; }
             .stat-item h3 {
                 font-size: 9px;
                 letter-spacing: 0.5px;
@@ -171,7 +172,7 @@
                 gap: 6px;
                 margin-bottom: 8px;
             }
-            .stat-item { padding: 6px 4px; }
+            .stat-item { padding: 5px 4px; }
             .stat-item h3 { font-size: 8px; margin-bottom: 2px; }
             .stat-item p { font-size: 14px; }
             .stat-item p small { font-size: 8px; margin-top: 1px; }
@@ -417,11 +418,10 @@
                 const chartWidth = chartArea.right - chartArea.left;
                 const isSmall = chartWidth < 400;
 
-                // Высота плашек уменьшена ещё на ~20%:
-                // было 11 / 9.5 → стало 9 / 7.5
+                // ВЕРНУЛ ПЕРВОНАЧАЛЬНЫЕ ЗНАЧЕНИЯ плашек max/min:
                 const fontPx = isSmall ? 8 : 10;
-                const pw0 = isSmall ? 7 : 9;
-                const ph = isSmall ? 7.5 : 9;
+                const pw0 = isSmall ? 8 : 10;
+                const ph = isSmall ? 9.5 : 11;
 
                 const drawBadge = (weight, color) => {
                     const y = yScale.getPixelForValue(weight);
@@ -437,7 +437,7 @@
                     const by = y - ph / 2;
 
                     ctx.fillStyle = color;
-                    roundRect(ctx, bx, by, pw, ph, 2);
+                    roundRect(ctx, bx, by, pw, ph, 3);
                     ctx.fill();
 
                     ctx.fillStyle = '#001236';
