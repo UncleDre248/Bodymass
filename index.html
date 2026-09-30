@@ -418,8 +418,6 @@
             }
         };
 
-        // ----- Плагин подписей месяцев: 3 буквы, вертикально, снизу вверх -----
-        // Отступ от горизонтальной оси увеличен на 5px: было offset 4 / 2, стало 9 / 7.
         const monthLabelsPlugin = {
             id: 'monthLabels',
             afterDraw(chart) {
@@ -432,7 +430,8 @@
                 const isSmall = chartWidth < 400;
 
                 const fontPx = isSmall ? 8 : 10;
-                // Было: isSmall ? 2 : 4 → стало: isSmall ? 7 : 9 (+5 пикселей)
+                // Расстояние от сетки до подписей месяцев — 9px,
+                // примерно как от меток вертикальной оси до её названия.
                 const offset = isSmall ? 7 : 9;
 
                 ctx.save();
@@ -461,7 +460,6 @@
             }
         };
 
-        // ----- Плагин подписей годов: внизу, под месяцами -----
         const yearLabelsPlugin = {
             id: 'yearLabels',
             afterDraw(chart) {
@@ -746,10 +744,18 @@
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
 
+            // Верхний отступ — маленький зазор от сетки до верхнего края фона.
             const padTop = isLandscapePhone ? 8 : (isSmall ? 10 : 12);
 
-            // Нижний отступ увеличен на 5px: было 70/80/90 → стало 75/85/95
-            const padBottom = isLandscapePhone ? 75 : (isSmall ? 85 : 95);
+            // Нижний отступ — увеличен, чтобы:
+            //   • месяцы отстояли от сетки почти как название вертикальной оси от меток
+            //   • годы находились примерно на таком же расстоянии от нижнего края фона,
+            //     как сетка от верхнего края.
+            // Месяцы рисуются на chartArea.bottom + 9 (маленькие — +7).
+            // Высота вертикальной подписи месяца ≈ 60 px.
+            // Годы рисуются ещё ниже — на chartArea.bottom + 62/55.
+            // Плюс запас снизу под сами годы (≈20 px).
+            const padBottom = isLandscapePhone ? 100 : (isSmall ? 110 : 120);
 
             chart = new Chart(ctx, {
                 type: 'bar',
