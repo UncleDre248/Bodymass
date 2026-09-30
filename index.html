@@ -213,6 +213,15 @@
             return RANGE_COLORS[76];
         }
 
+        // Преобразует HEX (#RRGGBB) в rgba(r,g,b,alpha)
+        function hexToRgba(hex, alpha) {
+            const h = hex.replace('#', '');
+            const r = parseInt(h.substring(0, 2), 16);
+            const g = parseInt(h.substring(2, 4), 16);
+            const b = parseInt(h.substring(4, 6), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
         function parseCSV(text) {
             const rows = [];
             let row = [];
@@ -277,7 +286,7 @@
 
                 const xScale = scales.x;
                 ctx.save();
-                ctx.setLineDash([]); // сплошная
+                ctx.setLineDash([]);
                 ctx.lineWidth = 1;
                 ctx.strokeStyle = 'rgba(200, 216, 232, 0.25)';
 
@@ -313,13 +322,14 @@
                 ctx.setLineDash([3, 3]);
                 ctx.lineWidth = 1.5;
 
-                ctx.strokeStyle = colorForWeight(chart._maxWeight);
+                // Полупрозрачные линии (50% альфа)
+                ctx.strokeStyle = hexToRgba(colorForWeight(chart._maxWeight), 0.5);
                 ctx.beginPath();
                 ctx.moveTo(chartArea.left, yMax);
                 ctx.lineTo(chartArea.right, yMax);
                 ctx.stroke();
 
-                ctx.strokeStyle = colorForWeight(chart._minWeight);
+                ctx.strokeStyle = hexToRgba(colorForWeight(chart._minWeight), 0.5);
                 ctx.beginPath();
                 ctx.moveTo(chartArea.left, yMin);
                 ctx.lineTo(chartArea.right, yMin);
@@ -360,6 +370,7 @@
                     ctx.restore();
                 };
 
+                // Плашки остаются полностью непрозрачными (100% цвет)
                 drawBadge(chart._maxWeight, colorForWeight(chart._maxWeight));
                 drawBadge(chart._minWeight, colorForWeight(chart._minWeight));
             }
