@@ -280,6 +280,24 @@
             ctx.closePath();
         }
 
+        // ----- Плагин: вертикальная ось Y -----
+        const yAxisLinePlugin = {
+            id: 'yAxisLine',
+            beforeDatasetsDraw(chart) {
+                const { ctx, chartArea } = chart;
+                if (!chartArea) return;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+                ctx.moveTo(chartArea.left, chartArea.top);
+                ctx.lineTo(chartArea.left, chartArea.bottom);
+                ctx.stroke();
+                ctx.restore();
+            }
+        };
+
         const yearLinesPlugin = {
             id: 'yearLines',
             beforeDatasetsDraw(chart) {
@@ -687,7 +705,7 @@
 
             chart = new Chart(ctx, {
                 type: 'bar',
-                plugins: [yearLinesPlugin, minMaxLinesPlugin, monthLabelsPlugin, yearLabelsPlugin],
+                plugins: [yAxisLinePlugin, yearLinesPlugin, minMaxLinesPlugin, monthLabelsPlugin, yearLabelsPlugin],
                 data: {
                     labels: labels,
                     datasets: [{
@@ -706,9 +724,8 @@
                     maintainAspectRatio: false,
                     animation: { duration: 500, easing: 'easeOutQuart' },
                     interaction: { mode: 'index', intersect: false },
-                    // Отступы уменьшены — теперь симметричные
                     layout: {
-                        padding: { top: 22, bottom: 22 }
+                        padding: { top: 22, bottom: 70 }
                     },
                     plugins: {
                         legend: { display: false },
