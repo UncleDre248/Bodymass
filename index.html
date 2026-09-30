@@ -430,8 +430,6 @@
                 const isSmall = chartWidth < 400;
 
                 const fontPx = isSmall ? 8 : 10;
-                // Расстояние от сетки до подписей месяцев — 9px,
-                // примерно как от меток вертикальной оси до её названия.
                 const offset = isSmall ? 7 : 9;
 
                 ctx.save();
@@ -744,18 +742,12 @@
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
 
-            // Верхний отступ — маленький зазор от сетки до верхнего края фона.
+            // Симметричные отступы по бокам: 12px слева и справа.
+            // Верхний отступ тоже ~12px. Нижний увеличен под подписи месяцев + годы.
             const padTop = isLandscapePhone ? 8 : (isSmall ? 10 : 12);
-
-            // Нижний отступ — увеличен, чтобы:
-            //   • месяцы отстояли от сетки почти как название вертикальной оси от меток
-            //   • годы находились примерно на таком же расстоянии от нижнего края фона,
-            //     как сетка от верхнего края.
-            // Месяцы рисуются на chartArea.bottom + 9 (маленькие — +7).
-            // Высота вертикальной подписи месяца ≈ 60 px.
-            // Годы рисуются ещё ниже — на chartArea.bottom + 62/55.
-            // Плюс запас снизу под сами годы (≈20 px).
             const padBottom = isLandscapePhone ? 100 : (isSmall ? 110 : 120);
+            const padLeft = 12;
+            const padRight = 12;
 
             chart = new Chart(ctx, {
                 type: 'bar',
@@ -779,7 +771,7 @@
                     animation: { duration: 500, easing: 'easeOutQuart' },
                     interaction: { mode: 'index', intersect: false },
                     layout: {
-                        padding: { top: padTop, bottom: padBottom, left: 23, right: 8 }
+                        padding: { top: padTop, bottom: padBottom, left: padLeft, right: padRight }
                     },
                     plugins: {
                         legend: { display: false },
@@ -807,14 +799,15 @@
                                 text: 'Масса тела (кг)',
                                 color: '#c8d8e8',
                                 font: { size: 10 },
-                                padding: { top: 0, bottom: 8 }
+                                // Уменьшил padding — название оси ближе к левому краю
+                                padding: { top: 0, bottom: 4 }
                             },
                             grid: { color: 'rgba(255,255,255,0.10)' },
                             ticks: {
                                 color: '#c8d8e8',
                                 stepSize: 1,
                                 font: { size: 10 },
-                                padding: 6
+                                padding: 4
                             }
                         },
                         x: {
