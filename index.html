@@ -11,6 +11,7 @@
             height: 100%;
             margin: 0;
             padding: 0;
+            overflow: hidden; /* убираем полосы прокрутки */
         }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -93,11 +94,12 @@
         .chart-container {
             position: relative;
             width: 100%;
-            height: 500px;
-            min-height: 500px;
+            flex: 1;             /* занимает всё свободное место */
+            min-height: 300px;   /* но не меньше 300px */
             background-color: #0a1018;
             border-radius: 12px;
             padding: 10px;
+            min-width: 0;
         }
         #hoverTooltip {
             position: absolute;
@@ -134,6 +136,13 @@
             color: #e74c3c;
             display: none;
         }
+        #dashboard {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            min-height: 0;
+            min-width: 0;
+        }
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(10px); }
             to   { opacity: 1; transform: translateY(0); }
@@ -145,7 +154,7 @@
         <div id="loading">Загрузка данных...</div>
         <div id="error"></div>
 
-        <div id="dashboard" style="display: none;">
+        <div id="dashboard">
             <div class="stats">
                 <div class="stat-item">
                     <h3>Текущий вес</h3>
@@ -432,7 +441,10 @@
                 }
 
                 loadingEl.style.display = 'none';
-                dashboardEl.style.display = 'block';
+                dashboardEl.style.display = 'flex';
+                dashboardEl.style.flexDirection = 'column';
+                dashboardEl.style.flex = '1';
+                dashboardEl.style.minHeight = '0';
 
                 updateStats({
                     lastRealWeight,
