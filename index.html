@@ -275,7 +275,6 @@
             ctx.closePath();
         }
 
-        // ----- Плагин 1: вертикальные линии на 1 января (за гистограммой) -----
         const yearLinesPlugin = {
             id: 'yearLines',
             beforeDatasetsDraw(chart) {
@@ -302,7 +301,6 @@
             }
         };
 
-        // ----- Плагин 2: подписи годов над верхней границей поля диаграммы -----
         const yearLabelsPlugin = {
             id: 'yearLabels',
             afterDraw(chart) {
@@ -317,8 +315,8 @@
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'bottom';
 
-                // Подняли на 10px выше, чем было (было top - 3, стало top - 13)
-                const y = chartArea.top - 13;
+                // Подняли на 13, теперь опускаем на 3 → итог top - 10
+                const y = chartArea.top - 10;
 
                 chart._yearSegments.forEach(seg => {
                     const xStart = xScale.getPixelForValue(seg.startIdx);
@@ -334,7 +332,6 @@
             }
         };
 
-        // ----- Плагин 3: пунктирные линии max/min + плашки на оси Y -----
         const minMaxLinesPlugin = {
             id: 'minMaxLines',
             afterDatasetsDraw(chart) {
@@ -640,7 +637,7 @@
                     animation: { duration: 500, easing: 'easeOutQuart' },
                     interaction: { mode: 'index', intersect: false },
                     layout: {
-                        padding: { top: 30 } // запас сверху для подписей годов (было 20)
+                        padding: { top: 30 }
                     },
                     plugins: {
                         legend: { display: false },
