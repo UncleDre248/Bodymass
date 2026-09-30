@@ -96,7 +96,8 @@
             position: relative;
             width: 100%;
             flex: 1;
-            min-height: 260px;
+            /* Высота увеличена — диаграмма растянулась вниз, ось X опустилась */
+            min-height: 300px;
             background-color: #0a1018;
             border-radius: 12px;
             padding: 10px;
@@ -156,14 +157,14 @@
             }
             .stat-item p { font-size: 16px; }
             .stat-item p small { font-size: 9px; margin-top: 2px; }
-            .chart-container { padding: 6px; border-radius: 8px; min-height: 230px; }
+            .chart-container { padding: 6px; border-radius: 8px; min-height: 270px; }
         }
         @media (max-width: 380px) {
             .stat-item p { font-size: 14px; }
             .stat-item h3 { font-size: 8px; }
         }
         @media (max-width: 600px) and (orientation: portrait) {
-            .chart-container { min-height: 260px; }
+            .chart-container { min-height: 300px; }
         }
         @media (max-width: 900px) and (orientation: landscape) {
             .stats {
@@ -175,7 +176,7 @@
             .stat-item h3 { font-size: 8px; margin-bottom: 2px; }
             .stat-item p { font-size: 14px; }
             .stat-item p small { font-size: 8px; margin-top: 1px; }
-            .chart-container { min-height: 200px; }
+            .chart-container { min-height: 240px; }
         }
     </style>
 </head>
@@ -231,9 +232,6 @@
             75: '#FF0000',
             76: '#B20000'
         };
-
-        // Сдвиг оси X вниз делается уменьшением padBottom на это значение.
-        const X_AXIS_DOWN_SHIFT = 10;
 
         function colorForWeight(w) {
             const key = Math.floor(w);
@@ -461,8 +459,6 @@
             }
         };
 
-        // Годы рисуются от фиксированной базы, которая запоминается
-        // при первом рендере и не меняется при последующих.
         const yearLabelsPlugin = {
             id: 'yearLabels',
             afterDraw(chart) {
@@ -477,18 +473,13 @@
                 const fontPx = isSmall ? 9 : 11;
                 const offset = isSmall ? 55 : 62;
 
-                // Запоминаем базовую Y один раз.
-                if (chart._yearBaseY === undefined) {
-                    chart._yearBaseY = chartArea.bottom;
-                }
-                const baseY = chart._yearBaseY;
-                const y = baseY + offset;
-
                 ctx.save();
                 ctx.font = `bold ${fontPx}px Inter, sans-serif`;
                 ctx.fillStyle = 'rgba(200, 216, 232, 0.55)';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'top';
+
+                const y = chartArea.bottom + offset;
 
                 chart._yearSegments.forEach(seg => {
                     const xStart = xScale.getPixelForValue(seg.startIdx);
@@ -752,14 +743,8 @@
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
 
-            // Верхний отступ — обычный.
             const padTop = isLandscapePhone ? 8 : (isSmall ? 10 : 12);
-
-            // Нижний отступ — уменьшен на X_AXIS_DOWN_SHIFT, чтобы нижняя
-            // граница области графика (ось X) опустилась на нужное число пикселей.
-            const basePadBottom = isLandscapePhone ? 87 : (isSmall ? 92 : 101);
-            const padBottom = basePadBottom - X_AXIS_DOWN_SHIFT;
-
+            const padBottom = isLandscapePhone ? 77 : (isSmall ? 82 : 91);
             const padLeft = 12;
             const padRight = 12;
 
