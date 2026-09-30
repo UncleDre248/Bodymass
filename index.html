@@ -106,30 +106,6 @@
             padding: 10px;
             min-width: 0;
         }
-        #hoverTooltip {
-            position: absolute;
-            display: none;
-            background: rgba(44, 62, 80, 0.97);
-            color: #e8eef5;
-            font-size: 12px;
-            line-height: 1.35;
-            padding: 8px 10px;
-            border-radius: 8px;
-            border: 1.5px solid #4db8ff;
-            pointer-events: none;
-            z-index: 10;
-            white-space: nowrap;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-        }
-        #hoverTooltip .tip-date {
-            color: #c8d8e8;
-            font-size: 11px;
-            margin-bottom: 2px;
-        }
-        #hoverTooltip .tip-value {
-            font-weight: 700;
-            font-size: 13px;
-        }
         #loading, #error {
             text-align: center;
             padding: 40px;
@@ -184,10 +160,6 @@
             </div>
             <div class="chart-container" id="chartContainer">
                 <canvas id="weightChart"></canvas>
-                <div id="hoverTooltip">
-                    <div class="tip-date"></div>
-                    <div class="tip-value"></div>
-                </div>
             </div>
         </div>
     </div>
@@ -364,9 +336,6 @@
                 const yScale = scales.y;
                 const yMax = yScale.getPixelForValue(chart._maxWeight);
                 const yMin = yScale.getPixelForValue(chart._minWeight);
-
-                chart._maxLineY = yMax;
-                chart._minLineY = yMin;
 
                 ctx.save();
                 ctx.setLineDash([3, 3]);
@@ -784,103 +753,6 @@
             chart._monthSegments = monthSegments;
 
             window.weightChartInstance = chart;
-            attachHoverHandlers();
-        }
-
-        function attachHoverHandlers() {
-            const container = document.getElementById('chartContainer');
-            const tooltipEl = document.getElementById('hoverTooltip');
-            const dateEl = tooltipEl.querySelector('.tip-date');
-            const valueEl = tooltipEl.querySelector('.tip-value');
-
-            let currentHoverKey = null;
-
-            container.addEventListener('mousemove', (e) => {
-                if (!chart || chart._maxWeight == null || chart._minWeight == null) {
-                    tooltipEl.style.display = 'none';
-                    return;
-                }
-
-                const rect = container.getBoundingClientRect();
-                const mouseX = e.clientX - rect.left;
-                const mouseY = e.clientY - rect.top;
-
-                const chartArea = chart.chartArea;
-                if (!chartArea) return;
-
-                const canvasRect = chart.canvas.getBoundingClientRect();
-                const xInCanvas = e.clientX - canvasRect.left;
-                const yInCanvas = e.clientY - canvasRect.top;
-
-                const isInside =
-                    xInCanvas >= chartArea.left && xInCanvas <= chartArea.right &&
-                    yInCanvas >= chartArea.top  && yInCanvas <= chartArea.bottom;
-
-                if (!isInside) {
-                    if (currentHoverKey !== null) {
-                        currentHoverKey = null;
-                        tooltipEl.style.display = 'none';
-                        chart.canvas.style.cursor = 'default';
-                    }
-                    return;
-                }
-
-                const HIT = 6;
-                const nearMax = Math.abs(yInCanvas - chart._maxLineY) <= HIT;
-                const nearMin = Math.abs(yInCanvas - chart._minLineY) <= HIT;
-
-                if (!nearMax && !nearMin) {
-                    if (currentHoverKey !== null) {
-                        currentHoverKey = null;
-                        tooltipEl.style.display = 'none';
-                        chart.canvas.style.cursor = 'default';
-                    }
-                    return;
-                }
-
-                const isMax = nearMax && (!nearMin ||
-                    Math.abs(yInCanvas - chart._maxLineY) <= Math.abs(yInCanvas - chart._minLineY));
-
-                const weight = isMax ? chart._maxWeight : chart._minWeight;
-                const date   = isMax ? chart._maxDate   : chart._minDate;
-
-                const key = (isMax ? 'max-' : 'min-') + weight + '-' + date.toISOString();
-                if (key === currentHoverKey) {
-                    moveTooltip(mouseX, mouseY);
-                    return;
-                }
-                currentHoverKey = key;
-
-                dateEl.textContent = formatDateShort(date);
-                valueEl.textContent = weight.toFixed(1) + ' кг';
-                valueEl.style.color = colorForWeight(weight);
-                tooltipEl.style.borderColor = colorForWeight(weight);
-                tooltipEl.style.display = 'block';
-                chart.canvas.style.cursor = 'pointer';
-
-                moveTooltip(mouseX, mouseY);
-            });
-
-            function moveTooltip(mx, my) {
-                const containerRect = container.getBoundingClientRect();
-                const tipRect = tooltipEl.getBoundingClientRect();
-                const pad = 14;
-
-                let left = mx + pad;
-                let top = my + pad;
-
-                if (left + tipRect.width > containerRect.width) left = mx - tipRect.width - pad;
-                if (top + tipRect.height > containerRect.height) top = my - tipRect.height - pad;
-
-                tooltipEl.style.left = left + 'px';
-                tooltipEl.style.top = top + 'px';
-            }
-
-            container.addEventListener('mouseleave', () => {
-                currentHoverKey = null;
-                tooltipEl.style.display = 'none';
-                chart.canvas.style.cursor = 'default';
-            });
         }
 
         window.onload = loadData;
