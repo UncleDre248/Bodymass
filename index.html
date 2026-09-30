@@ -11,7 +11,7 @@
             height: 100%;
             margin: 0;
             padding: 0;
-            overflow: hidden; /* убираем полосы прокрутки */
+            overflow: hidden;
         }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -33,17 +33,20 @@
         }
         .stats {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
             margin: 0 0 20px;
             flex-shrink: 0;
         }
-        @media (max-width: 720px) {
+        @media (max-width: 900px) {
+            .stats { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 600px) {
             .stats { grid-template-columns: repeat(2, 1fr); }
         }
         .stat-item {
             background: linear-gradient(135deg, #1e2a3a 0%, #243447 100%);
-            padding: 14px 12px;
+            padding: 12px 10px;
             border-radius: 12px;
             text-align: center;
             transition: transform 0.25s, box-shadow 0.25s;
@@ -52,16 +55,17 @@
             min-width: 0;
         }
         .stat-item:nth-child(1) { animation-delay: 0.05s; }
-        .stat-item:nth-child(2) { animation-delay: 0.12s; }
-        .stat-item:nth-child(3) { animation-delay: 0.20s; }
-        .stat-item:nth-child(4) { animation-delay: 0.28s; }
+        .stat-item:nth-child(2) { animation-delay: 0.10s; }
+        .stat-item:nth-child(3) { animation-delay: 0.15s; }
+        .stat-item:nth-child(4) { animation-delay: 0.20s; }
+        .stat-item:nth-child(5) { animation-delay: 0.25s; }
         .stat-item:hover {
             transform: translateY(-4px);
             box-shadow: 0 8px 20px rgba(0,0,0,0.35);
         }
         .stat-item h3 {
             margin: 0 0 6px;
-            font-size: 12px;
+            font-size: 11px;
             color: #8aa0b4;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -72,7 +76,7 @@
         }
         .stat-item p {
             margin: 0;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 700;
             color: #4db8ff;
             white-space: nowrap;
@@ -80,12 +84,13 @@
         .stat-item p.positive { color: #e74c3c; }
         .stat-item p.negative { color: #27ae60; }
         .stat-item p.neutral  { color: #4db8ff; }
-        #totalChange {
+        #totalChange,
+        #swingValue {
             color: #ffffff !important;
         }
         .stat-item p small {
             display: block;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 500;
             color: #8aa0b4;
             margin-top: 4px;
@@ -94,8 +99,8 @@
         .chart-container {
             position: relative;
             width: 100%;
-            flex: 1;             /* занимает всё свободное место */
-            min-height: 300px;   /* но не меньше 300px */
+            flex: 1;
+            min-height: 300px;
             background-color: #0a1018;
             border-radius: 12px;
             padding: 10px;
@@ -171,6 +176,10 @@
                 <div class="stat-item">
                     <h3>Изменение</h3>
                     <p id="totalChange">--</p>
+                </div>
+                <div class="stat-item">
+                    <h3>Колебание</h3>
+                    <p id="swingValue">--</p>
                 </div>
             </div>
             <div class="chart-container" id="chartContainer">
@@ -442,9 +451,6 @@
 
                 loadingEl.style.display = 'none';
                 dashboardEl.style.display = 'flex';
-                dashboardEl.style.flexDirection = 'column';
-                dashboardEl.style.flex = '1';
-                dashboardEl.style.minHeight = '0';
 
                 updateStats({
                     lastRealWeight,
@@ -470,34 +476,47 @@
             const changeEl = document.getElementById('totalChange');
             const maxEl = document.getElementById('maxWeight');
             const minEl = document.getElementById('minWeight');
+            const swingEl = document.getElementById('swingValue');
 
             if (data.lastRealWeight === null) {
                 currentEl.textContent = '--';
                 changeEl.textContent = '--';
                 maxEl.textContent = '--';
                 minEl.textContent = '--';
+                swingEl.textContent = '--';
                 return;
             }
 
+            // Текущий вес
             currentEl.innerHTML = data.lastRealWeight.toFixed(1) + ' кг<small>' +
                 formatDateShort(data.lastRealDate) + '</small>';
             currentEl.style.color = colorForWeight(data.lastRealWeight);
 
+            // Изменение: последняя − первая
             const change = data.lastRealWeight - data.firstRealWeight;
             const sign = change > 0 ? '+' : '';
             const range = formatDateShort(data.firstRealDate) + ' → ' + formatDateShort(data.lastRealDate);
             changeEl.innerHTML = sign + change.toFixed(1) + ' кг<small>' + range + '</small>';
 
+            // Максимум
             if (data.maxWeight !== null) {
                 maxEl.innerHTML = data.maxWeight.toFixed(1) + ' кг<small>' +
                     formatDateShort(data.maxDate) + '</small>';
                 maxEl.style.color = colorForWeight(data.maxWeight);
             }
 
+            // Минимум
             if (data.minWeight !== null) {
                 minEl.innerHTML = data.minWeight.toFixed(1) + ' кг<small>' +
                     formatDateShort(data.minDate) + '</small>';
                 minEl.style.color = colorForWeight(data.minWeight);
+            }
+
+            // Колебание: max − min
+            if (data.maxWeight !== null && data.minWeight !== null) {
+                const swing = data.maxWeight - data.minWeight;
+                const swingRange = data.minWeight.toFixed(1) + ' → ' + data.maxWeight.toFixed(1);
+                swingEl.innerHTML = swing.toFixed(1) + ' кг<small>' + swingRange + '</small>';
             }
         }
 
