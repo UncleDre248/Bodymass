@@ -187,7 +187,7 @@
         <div id="dashboard">
             <div class="stats">
                 <div class="stat-item">
-                    <h3>Текущий вес</h3>
+                    <h3>Текущая масса</h3>
                     <p id="currentWeight">--</p>
                 </div>
                 <div class="stat-item">
@@ -742,15 +742,11 @@
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
 
-            // Нижний отступ — компромисс: 28px (большой), 25px (маленький).
-            // Подписи месяцев + годов при этом умещаются, потому что
-            // min-height контейнера достаточный.
             const padTop = isLandscapePhone ? 8 : (isSmall ? 10 : 12);
             const padBottom = isLandscapePhone ? 25 : (isSmall ? 25 : 28);
             const padLeft = 12;
             const padRight = 12;
 
-            // Сдвиг вертикальной оси и её меток вправо.
             const Y_AXIS_SHIFT = 8;
 
             chart = new Chart(ctx, {
