@@ -302,6 +302,28 @@
             afterDraw(chart) {
                 const { ctx, chartArea, scales } = chart;
                 if (!chartArea) return;
+
+                // ----- Вертикальные линии на 1 января -----
+                if (chart._jan1Indices && chart._jan1Indices.length > 0) {
+                    const xScale = scales.x;
+                    ctx.save();
+                    ctx.setLineDash([4, 4]);
+                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = 'rgba(200, 216, 232, 0.35)';
+
+                    chart._jan1Indices.forEach(idx => {
+                        const x = xScale.getPixelForValue(idx);
+                        if (x >= chartArea.left && x <= chartArea.right) {
+                            ctx.beginPath();
+                            ctx.moveTo(x, chartArea.top);
+                            ctx.lineTo(x, chartArea.bottom);
+                            ctx.stroke();
+                        }
+                    });
+                    ctx.restore();
+                }
+
+                // ----- Плашки max/min на оси Y -----
                 if (chart._maxWeight == null || chart._minWeight == null) return;
 
                 const yScale = scales.y;
@@ -421,12 +443,20 @@
                 const labels = [];
                 const weights = [];
                 const dates = [];
+                const jan1Indices = [];
 
+                let idx = 0;
                 for (let d = new Date(firstDate); d <= lastDate; d.setDate(d.getDate() + 1)) {
                     const key = d.toISOString().slice(0, 10);
                     labels.push(formatDateShort(d));
                     dates.push(new Date(d));
                     weights.push(dataByDay[key] !== undefined ? dataByDay[key].weight : 0);
+
+                    // Запоминаем индексы 1 января
+                    if (d.getMonth() === 0 && d.getDate() === 1) {
+                        jan1Indices.push(idx);
+                    }
+                    idx++;
                 }
 
                 let maxWeight = null, minWeight = null;
@@ -461,7 +491,7 @@
                     minWeight, minDate
                 });
 
-                createChart(labels, weights, maxWeight, maxDate, minWeight, minDate);
+                createChart(labels, weights, maxWeight, maxDate, minWeight, minDate, jan1Indices);
 
             } catch (error) {
                 console.error('Ошибка:', error);
@@ -487,32 +517,27 @@
                 return;
             }
 
-            // Текущий вес
             currentEl.innerHTML = data.lastRealWeight.toFixed(1) + ' кг<small>' +
                 formatDateShort(data.lastRealDate) + '</small>';
             currentEl.style.color = colorForWeight(data.lastRealWeight);
 
-            // Изменение: последняя − первая
             const change = data.lastRealWeight - data.firstRealWeight;
             const sign = change > 0 ? '+' : '';
             const range = formatDateShort(data.firstRealDate) + ' → ' + formatDateShort(data.lastRealDate);
             changeEl.innerHTML = sign + change.toFixed(1) + ' кг<small>' + range + '</small>';
 
-            // Максимум
             if (data.maxWeight !== null) {
                 maxEl.innerHTML = data.maxWeight.toFixed(1) + ' кг<small>' +
                     formatDateShort(data.maxDate) + '</small>';
                 maxEl.style.color = colorForWeight(data.maxWeight);
             }
 
-            // Минимум
             if (data.minWeight !== null) {
                 minEl.innerHTML = data.minWeight.toFixed(1) + ' кг<small>' +
                     formatDateShort(data.minDate) + '</small>';
                 minEl.style.color = colorForWeight(data.minWeight);
             }
 
-            // Колебание: max − min
             if (data.maxWeight !== null && data.minWeight !== null) {
                 const swing = data.maxWeight - data.minWeight;
                 const swingRange = data.minWeight.toFixed(1) + ' → ' + data.maxWeight.toFixed(1);
@@ -520,7 +545,7 @@
             }
         }
 
-        function createChart(labels, data, maxWeight, maxDate, minWeight, minDate) {
+        function createChart(labels, data, maxWeight, maxDate, minWeight, minDate, jan1Indices) {
             if (chart) {
                 chart.destroy();
                 chart = null;
@@ -614,6 +639,7 @@
             chart._maxDate = maxDate;
             chart._minWeight = minWeight;
             chart._minDate = minDate;
+            chart._jan1Indices = jan1Indices;
 
             window.weightChartInstance = chart;
             attachHoverHandlers();
