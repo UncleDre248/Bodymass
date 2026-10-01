@@ -222,6 +222,9 @@
             76: '#B20000'
         };
 
+        // Дата, через которую должна проходить вертикальная ось
+        const V_AXIS_DATE = new Date(2024, 7, 1); // 01.08.2024
+
         function colorForWeight(w) {
             const key = Math.floor(w);
             if (RANGE_COLORS[key] !== undefined) return RANGE_COLORS[key];
@@ -291,20 +294,25 @@
             ctx.closePath();
         }
 
+        // Вертикальная ось проходит через индекс chart._vAxisIndex
         const yAxisLinePlugin = {
             id: 'yAxisLine',
             beforeDatasetsDraw(chart) {
-                const { ctx, chartArea } = chart;
+                const { ctx, chartArea, scales } = chart;
                 if (!chartArea) return;
+                if (chart._vAxisIndex == null) return;
 
-                const xOffset = 6;
+                const xScale = scales.x;
+                const x = xScale.getPixelForValue(chart._vAxisIndex);
+
+                if (x < chartArea.left || x > chartArea.right) return;
 
                 ctx.save();
                 ctx.beginPath();
                 ctx.lineWidth = 1;
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-                ctx.moveTo(chartArea.left + xOffset, chartArea.top);
-                ctx.lineTo(chartArea.left + xOffset, chartArea.bottom);
+                ctx.moveTo(x, chartArea.top);
+                ctx.lineTo(x, chartArea.bottom);
                 ctx.stroke();
                 ctx.restore();
             }
@@ -448,8 +456,6 @@
             }
         };
 
-        // Годы рисуются сразу под месяцами — offset уменьшен с 62/55 до 42/38.
-        // Это приблизило годы к горизонтальной оси X и опустило их ниже.
         const yearLabelsPlugin = {
             id: 'yearLabels',
             afterDraw(chart) {
@@ -585,6 +591,17 @@
                     idx++;
                 }
 
+                // Находим индекс для вертикальной оси — 01.08.2024.
+                // Если точной даты нет — берём первый день с датой >= 01.08.2024.
+                let vAxisIndex = -1;
+                for (let i = 0; i < dates.length; i++) {
+                    if (dates[i] >= V_AXIS_DATE) {
+                        vAxisIndex = i;
+                        break;
+                    }
+                }
+                if (vAxisIndex === -1) vAxisIndex = 0;
+
                 const yearSegments = [];
                 let curYear = null;
                 let startIdx = 0;
@@ -667,7 +684,7 @@
                 });
 
                 createChart(labels, weights, maxWeight, maxDate, minWeight, minDate,
-                            jan1Indices, yearSegments, monthSegments);
+                            jan1Indices, yearSegments, monthSegments, vAxisIndex);
 
             } catch (error) {
                 console.error('Ошибка:', error);
@@ -722,7 +739,7 @@
         }
 
         function createChart(labels, data, maxWeight, maxDate, minWeight, minDate,
-                             jan1Indices, yearSegments, monthSegments) {
+                             jan1Indices, yearSegments, monthSegments, vAxisIndex) {
             if (chart) {
                 chart.destroy();
                 chart = null;
@@ -734,12 +751,7 @@
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
 
-            // Верхний отступ — минимальный, чтобы область графика была выше.
             const padTop = isLandscapePhone ? 6 : (isSmall ? 8 : 10);
-
-            // Нижний отступ — достаточный для месяцев (≈55px) + годы с новым offset ≈42 + запас.
-            // Годы теперь ближе к оси X (offset = 42/38), поэтому padBottom можно уменьшить:
-            //   42 (годы) + 14 (высота года) + 10 (запас) = 66 → берём 70/65/60.
             const padBottom = isLandscapePhone ? 60 : (isSmall ? 65 : 70);
             const padLeft = 12;
             const padRight = 12;
@@ -830,6 +842,7 @@
             chart._jan1Indices = jan1Indices;
             chart._yearSegments = yearSegments;
             chart._monthSegments = monthSegments;
+            chart._vAxisIndex = vAxisIndex; // индекс дня 01.08.24
 
             window.weightChartInstance = chart;
         }
