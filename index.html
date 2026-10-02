@@ -125,6 +125,54 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
+        /* ============ КНОПКА ГОЛОСОВОГО ВВОДА ============ */
+        #voiceFab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: #4db8ff;
+            color: #001236;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(77, 184, 255, 0.4);
+            z-index: 1000;
+            user-select: none;
+            transition: transform 0.2s, background 0.2s;
+        }
+        #voiceFab:active {
+            transform: scale(0.95);
+        }
+        #voiceFab.listening {
+            background: #e74c3c;
+            color: #fff;
+            animation: pulse 1.2s infinite;
+        }
+        @keyframes pulse {
+            0%   { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.6); }
+            70%  { box-shadow: 0 0 0 20px rgba(231, 76, 60, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+        }
+        #voiceStatus {
+            position: fixed;
+            bottom: 100px;
+            right: 24px;
+            background: rgba(44, 62, 80, 0.97);
+            color: #e8eef5;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+            z-index: 1000;
+            max-width: 280px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
         /* ============ АДАПТИВ ============ */
         @media (max-width: 1100px) {
             .stat-item p { font-size: 17px; }
@@ -154,6 +202,8 @@
             .stat-item p { font-size: 15px; }
             .stat-item p small { font-size: 9px; }
             .chart-container { padding: 4px; min-height: 200px; }
+            #voiceFab { bottom: 16px; right: 16px; width: 56px; height: 56px; font-size: 24px; }
+            #voiceStatus { bottom: 84px; right: 16px; }
         }
         @media (max-width: 900px) and (orientation: landscape) {
             .stats {
@@ -203,7 +253,14 @@
         </div>
     </div>
 
+    <!-- Кнопка голосового ввода -->
+    <div id="voiceFab" title="Сказать массу тела">🎤</div>
+    <div id="voiceStatus"></div>
+
     <script>
+        // ⚠️ ЗАМЕНИТЕ НА URL ВАШЕГО APPS SCRIPT WEB APP
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-J7uowAuS4KDWt8a72VTYBVthKRxlos4QqGLqsnlxEY2zgLC5m_ql8_ieFmZ8x_nj/exec';
+
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRCxUQ2eWCaI8HwAvEFRVc1VzXgjun4Gkx5K6vk3x7dHyKaaq_GHatCTUMkh2vb2EYIWCtVUmnLnPiE/pub?output=csv';
 
         const MONTHS_RU = [
@@ -222,7 +279,6 @@
             76: '#B20000'
         };
 
-        // Дата, через которую должна проходить вертикальная ось
         const V_AXIS_DATE = new Date(2024, 7, 1); // 01.08.2024
 
         function colorForWeight(w) {
@@ -294,7 +350,6 @@
             ctx.closePath();
         }
 
-        // Вертикальная ось проходит через индекс chart._vAxisIndex
         const yAxisLinePlugin = {
             id: 'yAxisLine',
             beforeDatasetsDraw(chart) {
@@ -591,8 +646,6 @@
                     idx++;
                 }
 
-                // Находим индекс для вертикальной оси — 01.08.2024.
-                // Если точной даты нет — берём первый день с датой >= 01.08.2024.
                 let vAxisIndex = -1;
                 for (let i = 0; i < dates.length; i++) {
                     if (dates[i] >= V_AXIS_DATE) {
@@ -842,7 +895,7 @@
             chart._jan1Indices = jan1Indices;
             chart._yearSegments = yearSegments;
             chart._monthSegments = monthSegments;
-            chart._vAxisIndex = vAxisIndex; // индекс дня 01.08.24
+            chart._vAxisIndex = vAxisIndex;
 
             window.weightChartInstance = chart;
         }
@@ -856,6 +909,94 @@
                 }
             }, 200);
         });
+
+        // ============ ГОЛОСОВОЙ ВВОД ============
+        const voiceFab = document.getElementById('voiceFab');
+        const voiceStatus = document.getElementById('voiceStatus');
+
+        function showStatus(text, isError) {
+            voiceStatus.textContent = text;
+            voiceStatus.style.display = 'block';
+            voiceStatus.style.background = isError 
+                ? 'rgba(231, 76, 60, 0.95)' 
+                : 'rgba(44, 62, 80, 0.97)';
+            clearTimeout(showStatus._t);
+            showStatus._t = setTimeout(() => { voiceStatus.style.display = 'none'; }, 5000);
+        }
+
+        function parseSpokenWeight(text) {
+            const cleaned = String(text).replace(',', '.');
+            const match = cleaned.match(/(\d+[.,]?\d*)/);
+            if (!match) return null;
+            const num = parseFloat(match[1].replace(',', '.'));
+            return isNaN(num) ? null : num;
+        }
+
+        function startVoiceInput() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                showStatus('Голосовой ввод не поддерживается этим браузером', true);
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'ru-RU';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            voiceFab.classList.add('listening');
+            showStatus('🎤 Говорите массу...');
+
+            recognition.onresult = async (event) => {
+                voiceFab.classList.remove('listening');
+                const spoken = event.results[0][0].transcript;
+                const weight = parseSpokenWeight(spoken);
+
+                if (weight === null) {
+                    showStatus('Не распознал число: «' + spoken + '». Попробуйте ещё раз', true);
+                    return;
+                }
+
+                showStatus('Записываю ' + weight.toFixed(1) + ' кг...');
+
+                try {
+                    const response = await fetch(APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ weight: weight }),
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                    });
+
+                    const result = await response.json();
+
+                    if (result.status === 'ok') {
+                        showStatus('✅ Записано: ' + result.weight.toFixed(1) + ' кг за ' + result.date);
+                        // Через 2 секунды перезагружаем дашборд
+                        setTimeout(() => {
+                            if (window.weightChartInstance) {
+                                loadData();
+                            }
+                        }, 2000);
+                    } else {
+                        showStatus('Ошибка: ' + result.message, true);
+                    }
+                } catch (err) {
+                    showStatus('Не удалось записать: ' + err.message, true);
+                }
+            };
+
+            recognition.onerror = (event) => {
+                voiceFab.classList.remove('listening');
+                showStatus('Ошибка распознавания: ' + event.error, true);
+            };
+
+            recognition.onend = () => {
+                voiceFab.classList.remove('listening');
+            };
+
+            recognition.start();
+        }
+
+        voiceFab.addEventListener('click', startVoiceInput);
 
         window.onload = loadData;
     </script>
