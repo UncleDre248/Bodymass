@@ -206,7 +206,6 @@
             padding: 0;
             background: #0a1018;
         }
-        /* Подсказка в углу для выхода */
         .fullscreen-hint {
             display: none;
             position: fixed;
@@ -348,10 +347,8 @@
         const V_AXIS_DATE = new Date(2024, 7, 1);
         const MAX_DATE = new Date(2026, 11, 31, 23, 59, 59);
 
-        // Дата, до которой дотягивается ось X у диаграмм "Всё время" и "Сравнение по годам"
         const X_MAX_DATE = new Date(2026, 11, 31);
 
-        // Порядок периодов для свайпа (слева направо: от меньшего к большему)
         const PERIOD_ORDER = ['1m', '3m', '6m', '1y', 'all'];
 
         let ALL_ENTRIES = [];
@@ -670,12 +667,12 @@
             }
         };
 
-        // Плагин легенды диапазонов для диаграммы "Всё время"
+        // Плагин легенды диапазонов (работает на всех периодах обычной диаграммы)
         const weightLegendPlugin = {
             id: 'weightLegend',
             afterDraw(chart) {
                 if (!chart._showWeightLegend) return;
-                const { ctx, chartArea, scales } = chart;
+                const { ctx, chartArea } = chart;
                 if (!chartArea) return;
 
                 const usedKeys = new Set();
@@ -921,7 +918,9 @@
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
             const padTopBase = isLandscapePhone ? 26 : (isSmall ? 28 : 32);
-            const padTop = (CURRENT_PERIOD === 'all') ? padTopBase + 22 : padTopBase;
+            // Легенда диапазонов теперь показывается на всех периодах обычной диаграммы,
+            // поэтому верхний отступ увеличен всегда.
+            const padTop = padTopBase + 22;
             const padBottom = getPadBottom();
 
             const showMonthGrid = (CURRENT_PERIOD === '6m' || CURRENT_PERIOD === '1y' ||
@@ -1012,7 +1011,8 @@
             chart._yearSegments = yearSegments;
             chart._monthSegments = monthSegments;
             chart._vAxisIndex = vAxisIndex;
-            chart._showWeightLegend = (CURRENT_PERIOD === 'all');
+            // Легенда диапазонов — на всех периодах обычной диаграммы
+            chart._showWeightLegend = true;
             chart._legendWeights = entries.map(e => e.weight);
 
             setTimeout(() => {
@@ -1328,7 +1328,6 @@
             if (chartFullscreen) return;
             chartFullscreen = true;
             document.body.classList.add('chart-fullscreen');
-            // Даём браузеру перестроить layout, затем просим Chart.js перерисоваться
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     if (chart) chart.resize();
@@ -1356,10 +1355,9 @@
             const container = document.getElementById('chartContainer');
             if (!container) return;
 
-            const DBL_TAP_MS = 300;      // окно между двумя тапами
-            const DBL_TAP_DIST = 30;     // максимальное смещение между тапами (px)
+            const DBL_TAP_MS = 300;
+            const DBL_TAP_DIST = 30;
 
-            // --- Touch: двойной тап ---
             let lastTapTime = 0;
             let lastTapX = 0;
             let lastTapY = 0;
@@ -1379,12 +1377,11 @@
                 const t = e.touches[0];
                 const dx = t.clientX - startX;
                 const dy = t.clientY - startY;
-                // Если палец уехал больше, чем на 15 px — это уже не тап, а свайп/скролл
                 if (Math.abs(dx) > 15 || Math.abs(dy) > 15) movedSinceTap = true;
             }, { passive: true });
 
             container.addEventListener('touchend', (e) => {
-                if (movedSinceTap) return;                 // был свайп — игнорируем
+                if (movedSinceTap) return;
                 if (!e.changedTouches || e.changedTouches.length === 0) return;
                 const t = e.changedTouches[0];
                 const now = Date.now();
@@ -1394,7 +1391,6 @@
                 if (now - lastTapTime < DBL_TAP_MS &&
                     Math.abs(dx) < DBL_TAP_DIST &&
                     Math.abs(dy) < DBL_TAP_DIST) {
-                    // Двойной тап
                     toggleFullscreen();
                     lastTapTime = 0;
                 } else {
@@ -1404,13 +1400,11 @@
                 }
             }, { passive: true });
 
-            // --- Mouse: двойной клик ---
             container.addEventListener('dblclick', (e) => {
                 e.preventDefault();
                 toggleFullscreen();
             });
 
-            // --- Выход по Esc ---
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape' && chartFullscreen) exitFullscreen();
             });
