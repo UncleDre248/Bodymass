@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="robots" content="noindex, nofollow">
     <title>Запись массы тела</title>
-    <link rel="manifest" href="manifest-record.json">
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0a1018">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -34,7 +34,6 @@
             min-height: 0;
             min-width: 0;
         }
-        /* 6 равных колонок: кнопка и плашки одинаковой ширины */
         .stats {
             display: grid;
             grid-template-columns: repeat(6, 1fr);
@@ -103,7 +102,6 @@
         }
 
         /* ============ КНОПКА ЗАПИСИ ============ */
-        /* Видима по умолчанию — никаких opacity: 0 */
         .voice-btn {
             background: #e74c3c;
             border-radius: 10px;
@@ -122,7 +120,6 @@
             padding: 0 6px;
             overflow: hidden;
             position: relative;
-            /* Плавное появление без исчезновения */
             opacity: 1;
         }
         .voice-btn:hover {
@@ -144,31 +141,20 @@
             text-align: center;
             line-height: 1.1;
         }
-        /* Состояние "слушаю" — тёмно-красная, пульсирует, показывает «Говорите» */
-        /* opacity: 1 явно, чтобы анимация voicePulse не сбрасывала видимость */
         .voice-btn.listening {
             background: #c0392b;
             opacity: 1;
             animation: voicePulse 1.2s infinite;
         }
-        .voice-btn.listening .icon {
-            display: none;
-        }
-        .voice-btn.listening .listening-text {
-            display: block;
-        }
-        /* Состояние "показываю результат" — зелёная */
+        .voice-btn.listening .icon { display: none; }
+        .voice-btn.listening .listening-text { display: block; }
         .voice-btn.showing {
             background: #27ae60;
             opacity: 1;
             animation: none;
         }
-        .voice-btn.showing .icon {
-            display: none;
-        }
-        .voice-btn.showing .listening-text {
-            display: none;
-        }
+        .voice-btn.showing .icon { display: none; }
+        .voice-btn.showing .listening-text { display: none; }
         .voice-btn .result {
             display: none;
             font-size: 12px;
@@ -177,9 +163,7 @@
             white-space: normal;
             word-break: break-word;
         }
-        .voice-btn.showing .result {
-            display: block;
-        }
+        .voice-btn.showing .result { display: block; }
         .voice-btn .result small {
             display: block;
             font-size: 9px;
@@ -224,6 +208,55 @@
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(10px); }
             to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ============ ВСПЛЫВАЮЩЕЕ ОКНО ПО ЦЕНТРУ ============ */
+        #confirmModal {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 32, 0.65);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        #confirmModal.visible {
+            display: flex;
+            opacity: 1;
+        }
+        .confirm-box {
+            background: #1a2332;
+            padding: 28px 36px;
+            border-radius: 18px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.7);
+            text-align: center;
+            min-width: 220px;
+            transform: scale(0.9);
+            transition: transform 0.25s;
+            border: 1px solid rgba(77, 184, 255, 0.25);
+        }
+        #confirmModal.visible .confirm-box {
+            transform: scale(1);
+        }
+        .confirm-box .confirm-weight {
+            font-size: 40px;
+            font-weight: 800;
+            color: #4db8ff;
+            line-height: 1.1;
+            margin: 0 0 8px;
+        }
+        .confirm-box .confirm-date {
+            font-size: 16px;
+            font-weight: 600;
+            color: #8aa0b4;
+            margin: 0 0 14px;
+        }
+        .confirm-box .confirm-hint {
+            font-size: 12px;
+            color: #8aa0b4;
+            opacity: 0.7;
         }
 
         /* ============ PIN-ЭКРАН ============ */
@@ -337,6 +370,9 @@
             .voice-btn .listening-text { font-size: 11px; }
             .voice-btn .result { font-size: 10px; }
             .chart-container { padding: 4px; min-height: 200px; }
+            .confirm-box { padding: 22px 26px; }
+            .confirm-box .confirm-weight { font-size: 32px; }
+            .confirm-box .confirm-date { font-size: 14px; }
         }
         @media (max-width: 420px) {
             .stat-item h3 { display: none; }
@@ -406,6 +442,15 @@
             <div class="chart-container" id="chartContainer">
                 <canvas id="weightChart"></canvas>
             </div>
+        </div>
+    </div>
+
+    <!-- ВСПЛЫВАЮЩЕЕ ОКНО ПО ЦЕНТРУ -->
+    <div id="confirmModal">
+        <div class="confirm-box">
+            <p class="confirm-weight" id="confirmWeight">--</p>
+            <p class="confirm-date" id="confirmDate">--</p>
+            <p class="confirm-hint">Отправляю в таблицу...</p>
         </div>
     </div>
 
@@ -1039,6 +1084,9 @@
         const voiceBtn = document.getElementById('voiceBtn');
         const voiceStatus = document.getElementById('voiceStatus');
         const resultEl = voiceBtn.querySelector('.result');
+        const confirmModal = document.getElementById('confirmModal');
+        const confirmWeight = document.getElementById('confirmWeight');
+        const confirmDate = document.getElementById('confirmDate');
 
         const MONTHS_RU_FULL = [
             'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
@@ -1136,14 +1184,14 @@
             return { date: null, weight };
         }
 
-        function showResultOnButton(weight, date) {
+        // Показать всплывающее окно по центру на 2 секунды
+        function showConfirmModal(weight, date) {
             return new Promise(resolve => {
-                voiceBtn.classList.add('showing');
-                resultEl.innerHTML = weight.toFixed(1) + ' кг' +
-                    (date ? '<small>' + date + '</small>' : '<small>сегодня</small>');
+                confirmWeight.textContent = weight.toFixed(1) + ' кг';
+                confirmDate.textContent = date ? date : 'сегодня';
+                confirmModal.classList.add('visible');
                 setTimeout(() => {
-                    voiceBtn.classList.remove('showing');
-                    resultEl.innerHTML = '';
+                    confirmModal.classList.remove('visible');
                     resolve();
                 }, 2000);
             });
@@ -1172,8 +1220,10 @@
                     return;
                 }
 
-                await showResultOnButton(parsed.weight, parsed.date);
+                // 1. Показываем всплывающее окно с данными по центру
+                await showConfirmModal(parsed.weight, parsed.date);
 
+                // 2. Отправляем в Apps Script
                 const dateInfo = parsed.date ? ' за ' + parsed.date : ' (сегодня)';
                 showStatus('Отправляю ' + parsed.weight.toFixed(1) + ' кг' + dateInfo + '...');
 
@@ -1205,7 +1255,6 @@
 
             recognition.onerror = (event) => {
                 voiceBtn.classList.remove('listening');
-                // Понятные сообщения для частых ошибок
                 let msg = 'Ошибка распознавания: ' + event.error;
                 if (event.error === 'network') {
                     msg = 'Нет доступа к серверам распознавания. Проверьте интернет и VPN.';
