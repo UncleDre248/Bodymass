@@ -374,15 +374,11 @@
             '#4db8ff', '#f39c12', '#e74c3c', '#27ae60', '#9b59b6', '#00cec9', '#e67e22'
         ];
 
-        // === Цвета сеток (исходные) ===
-        // Горизонтальная сетка (оси Y)
+        // === Цвета сеток ===
         const Y_GRID_COLOR      = 'rgba(255,255,255,0.10)';
-        // Вертикальная стартовая линия (начало оси X)
         const START_LINE_COLOR  = 'rgba(255,255,255,0.25)';
-        // Вертикальная месячная сетка (1м/3м/6м/1г и сравнение)
         const MONTH_GRID_COLOR  = 'rgba(255,255,255,0.06)';
         const MONTH_GRID_COLOR_COMPARE = 'rgba(255,255,255,0.08)';
-        // Вертикальные линии 1 января
         const YEAR_LINE_COLOR   = 'rgba(200,216,232,0.25)';
 
         const V_AXIS_DATE = new Date(2024, 7, 1);
@@ -745,6 +741,10 @@
             }
         };
 
+        // === Легенда диапазонов ===
+        // Формат элемента: [число] [квадратик]
+        // Логика: цвет квадратика после числа N = цвет диапазона [N, N+1).
+        // Крайние случаи: <69 (зелёный) и 76+ (тёмно-красный).
         const weightLegendPlugin = {
             id: 'weightLegend',
             afterDraw(chart) {
@@ -774,16 +774,18 @@
                 const isSmall = (chartArea.right - chartArea.left) < 480;
                 const fontPx = isSmall ? 9 : 10;
                 const boxSize = isSmall ? 8 : 9;
-                const itemGap = isSmall ? 7 : 10;
+                const textGap = isSmall ? 3 : 4;   // между числом и квадратиком
+                const itemGap = isSmall ? 9 : 12;  // между парами
 
                 ctx.save();
                 ctx.font = `600 ${fontPx}px Inter, sans-serif`;
                 ctx.textBaseline = 'middle';
 
+                // Измеряем ширины: сначала текст, потом квадратик
                 let totalWidth = 0;
                 const sizes = items.map(it => {
                     const tw = ctx.measureText(it.label).width;
-                    const w = boxSize + 3 + tw;
+                    const w = tw + textGap + boxSize;
                     totalWidth += w;
                     return { w, tw };
                 });
@@ -793,12 +795,17 @@
                 let x = startX;
 
                 items.forEach((it, i) => {
-                    ctx.fillStyle = it.color;
-                    roundRect(ctx, x, top, boxSize, boxSize, 2);
-                    ctx.fill();
+                    // 1. Число слева
                     ctx.fillStyle = '#c8d8e8';
                     ctx.textAlign = 'left';
-                    ctx.fillText(it.label, x + boxSize + 3, top + boxSize / 2 + 0.5);
+                    ctx.fillText(it.label, x, top + boxSize / 2 + 0.5);
+
+                    // 2. Квадратик справа
+                    const bx = x + sizes[i].tw + textGap;
+                    ctx.fillStyle = it.color;
+                    roundRect(ctx, bx, top, boxSize, boxSize, 2);
+                    ctx.fill();
+
                     x += sizes[i].w + itemGap;
                 });
                 ctx.restore();
