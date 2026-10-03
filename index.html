@@ -101,10 +101,9 @@
             white-space: nowrap;
             line-height: 1.1;
         }
-        /* Стрелки: чуть ниже по высоте, ширина сохраняется */
         .trend-arrow {
             display: inline-block;
-            font-size: 18px;      /* было 22 */
+            font-size: 18px;
             font-weight: 900;
             margin-left: 4px;
             vertical-align: middle;
@@ -114,7 +113,6 @@
         .trend-down { color: #27ae60; }
         .trend-same { color: #8aa0b4; }
 
-        /* ============ ПАНЕЛЬ КНОПОК ПЕРИОДА ============ */
         .period-bar {
             display: flex;
             gap: 6px;
@@ -161,7 +159,6 @@
             border-radius: 12px;
             padding: 6px;
             min-width: 0;
-            /* Фиксированная высота через flex-basis — не зависит от содержимого */
             overflow: hidden;
         }
         #loading, #error {
@@ -315,6 +312,12 @@
             if (RANGE_COLORS[key] !== undefined) return RANGE_COLORS[key];
             if (key < 69) return RANGE_COLORS[69];
             return RANGE_COLORS[76];
+        }
+
+        function colorForYear(year) {
+            const BASE_YEAR = 2024;
+            const idx = ((year - BASE_YEAR) % YEAR_COLORS.length + YEAR_COLORS.length) % YEAR_COLORS.length;
+            return YEAR_COLORS[idx];
         }
 
         function hexToRgba(hex, alpha) {
@@ -761,8 +764,8 @@
             const years = Object.keys(byYear).map(Number).sort();
             const datasets = [];
 
-            years.forEach((year, i) => {
-                const color = YEAR_COLORS[i % YEAR_COLORS.length];
+            years.forEach((year) => {
+                const color = colorForYear(year);
                 const points = byYear[year].map(e => {
                     const startOfYear = new Date(year, 0, 1);
                     const dayOfYear = Math.floor((e.date - startOfYear) / 86400000) + 1;
@@ -794,7 +797,6 @@
 
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
-            // Верхний отступ = запас под легенду сравнения, чтобы высоты совпадали
             const padTop = isLandscapePhone ? 26 : (isSmall ? 28 : 32);
 
             const showDateTicks = (CURRENT_PERIOD === '1m' || CURRENT_PERIOD === '3m');
@@ -930,7 +932,6 @@
 
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
-            // Тот же верхний отступ, что и у обычных — чтобы высоты совпадали
             const padTop = isLandscapePhone ? 26 : (isSmall ? 28 : 32);
             const padBottom = isLandscapePhone ? 30 : (isSmall ? 35 : 40);
 
@@ -1037,16 +1038,16 @@
             window.weightChartInstance = chart;
         }
 
-        // ============================================================
-        //  Перерисовка с учётом COMPARE_MODE (независим от периода)
-        // ============================================================
         function redraw() {
-            const filtered = filterByPeriod(ALL_ENTRIES, CURRENT_PERIOD);
-            updateStats(filtered);
-            // COMPARE_MODE — глобальный, он НЕ сбрасывается при смене периода
+            // Если режим сравнения — всегда показываем данные за всё время
+            // и обновляем статистику за всё время
             if (COMPARE_MODE) {
-                createCompareChart(filtered);
+                const allEntries = filterByPeriod(ALL_ENTRIES, 'all');
+                updateStats(allEntries);
+                createCompareChart(allEntries);
             } else {
+                const filtered = filterByPeriod(ALL_ENTRIES, CURRENT_PERIOD);
+                updateStats(filtered);
                 createNormalChart(filtered);
             }
         }
@@ -1126,22 +1127,22 @@
             }
         }
 
-        // ============================================================
-        //  Кнопки: период и «Сравнение по годам» независимы
-        // ============================================================
         function setupPeriodButtons() {
             document.querySelectorAll('.period-btn[data-period]').forEach(btn => {
                 btn.addEventListener('click', () => {
                     document.querySelectorAll('.period-btn[data-period]').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     CURRENT_PERIOD = btn.dataset.period;
-                    // COMPARE_MODE НЕ сбрасывается — остаётся как был
+                    // Клик по периоду отключает режим сравнения
+                    COMPARE_MODE = false;
+                    document.getElementById('compareBtn').classList.remove('active');
                     redraw();
                 });
             });
             document.getElementById('compareBtn').addEventListener('click', () => {
                 COMPARE_MODE = !COMPARE_MODE;
                 document.getElementById('compareBtn').classList.toggle('active', COMPARE_MODE);
+                // Период не меняем — но в режиме сравнения он игнорируется
                 redraw();
             });
         }
