@@ -35,6 +35,46 @@
             min-width: 0;
             overflow: hidden;
         }
+
+        /* === Кнопки периодов — теперь сверху === */
+        .period-bar {
+            display: flex;
+            gap: 6px;
+            margin: 0 0 6px;
+            flex-shrink: 0;
+            align-items: stretch;
+        }
+        .period-btn {
+            background: #0a1018;
+            color: #c8d8e8;
+            border: 1px solid #2c3a4f;
+            padding: 9px 8px;             /* высота +30% */
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            white-space: nowrap;
+            user-select: none;
+            width: 90px;
+            flex: 0 0 90px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        .period-btn:hover { background: #131c28; }
+        .period-btn.active {
+            background: #4db8ff;
+            color: #001236;
+            border-color: #4db8ff;
+        }
+        .period-btn.compare {
+            margin-left: auto;
+            width: auto;
+            flex: 0 0 auto;
+            min-width: 140px;
+        }
+
+        /* === Плашки — теперь под кнопками === */
         .stats {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -111,43 +151,6 @@
         .trend-up { color: #e74c3c; }
         .trend-down { color: #27ae60; }
         .trend-same { color: #8aa0b4; }
-
-        .period-bar {
-            display: flex;
-            gap: 6px;
-            margin: 0 0 8px;
-            flex-shrink: 0;
-            align-items: stretch;
-        }
-        .period-btn {
-            background: #0a1018;
-            color: #c8d8e8;
-            border: 1px solid #2c3a4f;
-            padding: 6px 8px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.15s, color 0.15s, border-color 0.15s;
-            white-space: nowrap;
-            user-select: none;
-            width: 90px;
-            flex: 0 0 90px;
-            text-align: center;
-            box-sizing: border-box;
-        }
-        .period-btn:hover { background: #131c28; }
-        .period-btn.active {
-            background: #4db8ff;
-            color: #001236;
-            border-color: #4db8ff;
-        }
-        .period-btn.compare {
-            margin-left: auto;
-            width: auto;
-            flex: 0 0 auto;
-            min-width: 140px;
-        }
 
         .chart-container {
             position: relative;
@@ -236,46 +239,46 @@
             .trend-arrow { font-size: 18px; }
         }
         @media (max-width: 900px) {
+            .period-bar { gap: 6px; margin-bottom: 5px; }
+            .period-btn { width: 75px; flex: 0 0 75px; font-size: 11px; padding: 8px 6px; border-radius: 8px; }
+            .period-btn.compare { min-width: 120px; font-size: 11px; }
             .stats { gap: 5px; margin-bottom: 3px; }
             .stat-item { padding: 5px 4px; }
             .stat-item p { font-size: 13px; }
             .stat-item h3 { font-size: 7px; }
             .stat-item p small { font-size: 7px; }
             .trend-arrow { font-size: 16px; }
-            .period-bar { gap: 6px; margin-bottom: 6px; }
-            .period-btn { width: 75px; flex: 0 0 75px; font-size: 11px; padding: 6px 6px; border-radius: 8px; }
-            .period-btn.compare { min-width: 120px; font-size: 11px; }
         }
         @media (max-width: 600px) {
             body { padding: 4px; }
             .container { padding: 6px; border-radius: 10px; }
+            .period-bar { gap: 4px; margin-bottom: 4px; }
+            .period-btn { width: 62px; flex: 0 0 62px; font-size: 10px; padding: 8px 5px; border-radius: 6px; }
+            .period-btn.compare { min-width: 100px; font-size: 10px; }
             .stats { gap: 4px; margin-bottom: 3px; }
             .stat-item { padding: 4px 3px; border-radius: 6px; }
             .stat-item h3 { font-size: 7px; letter-spacing: 0.2px; margin-bottom: 1px; }
             .stat-item p { font-size: 12px; }
             .stat-item p small { font-size: 7px; }
             .trend-arrow { font-size: 14px; margin-left: 2px; }
-            .period-bar { gap: 4px; margin-bottom: 5px; }
-            .period-btn { width: 62px; flex: 0 0 62px; font-size: 10px; padding: 6px 5px; border-radius: 6px; }
-            .period-btn.compare { min-width: 100px; font-size: 10px; }
             .chart-container { padding: 3px; border-radius: 8px; }
         }
         @media (max-width: 420px) {
             .stat-item h3 { display: none; }
             .stat-item { padding: 4px 2px; }
-            .period-btn { width: 54px; flex: 0 0 54px; font-size: 9px; padding: 5px 4px; border-radius: 6px; }
+            .period-btn { width: 54px; flex: 0 0 54px; font-size: 9px; padding: 7px 4px; border-radius: 6px; }
             .period-btn.compare { min-width: 90px; font-size: 9px; }
             .trend-arrow { font-size: 13px; }
         }
         @media (max-width: 900px) and (orientation: landscape) {
+            .period-bar { gap: 6px; margin-bottom: 5px; }
+            .period-btn { width: 75px; flex: 0 0 75px; font-size: 10px; padding: 8px 6px; border-radius: 8px; }
+            .period-btn.compare { min-width: 120px; font-size: 10px; }
             .stats { gap: 4px; margin-bottom: 3px; }
             .stat-item { padding: 4px 3px; }
             .stat-item h3 { font-size: 7px; margin-bottom: 1px; }
             .stat-item p { font-size: 11px; }
             .stat-item p small { font-size: 7px; }
-            .period-bar { gap: 6px; margin-bottom: 6px; }
-            .period-btn { width: 75px; flex: 0 0 75px; font-size: 10px; padding: 6px 6px; border-radius: 8px; }
-            .period-btn.compare { min-width: 120px; font-size: 10px; }
         }
     </style>
 </head>
@@ -285,6 +288,17 @@
         <div id="error"></div>
 
         <div id="dashboard">
+            <!-- Кнопки периодов — теперь сверху -->
+            <div class="period-bar" id="periodBar">
+                <button class="period-btn active" data-period="all">Всё время</button>
+                <button class="period-btn" data-period="1y">1 год</button>
+                <button class="period-btn" data-period="6m">6 месяцев</button>
+                <button class="period-btn" data-period="3m">3 месяца</button>
+                <button class="period-btn" data-period="1m">1 месяц</button>
+                <button class="period-btn compare" id="compareBtn">Сравнение по годам</button>
+            </div>
+
+            <!-- Плашки — теперь под кнопками -->
             <div class="stats">
                 <div class="stat-item">
                     <h3>Текущая масса</h3>
@@ -306,15 +320,6 @@
                     <h3>Колебание</h3>
                     <p id="swingValue">--</p>
                 </div>
-            </div>
-
-            <div class="period-bar" id="periodBar">
-                <button class="period-btn active" data-period="all">Всё время</button>
-                <button class="period-btn" data-period="1y">1 год</button>
-                <button class="period-btn" data-period="6m">6 месяцев</button>
-                <button class="period-btn" data-period="3m">3 месяца</button>
-                <button class="period-btn" data-period="1m">1 месяц</button>
-                <button class="period-btn compare" id="compareBtn">Сравнение по годам</button>
             </div>
 
             <div class="chart-container" id="chartContainer">
