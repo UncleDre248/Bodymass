@@ -129,10 +129,11 @@
             transition: background 0.15s, color 0.15s, border-color 0.15s;
             white-space: nowrap;
             user-select: none;
-            /* Ширина уменьшена на ~70%: flex-basis 0.3 */
-            flex: 0 1 auto;
+            /* Одинаковая ширина всех кнопок периода */
+            width: 90px;
+            flex: 0 0 90px;
             text-align: center;
-            min-width: 60px;
+            box-sizing: border-box;
         }
         .period-btn:hover { background: #131c28; }
         .period-btn.active {
@@ -140,10 +141,12 @@
             color: #001236;
             border-color: #4db8ff;
         }
-        /* "Сравнение по годам" прижата к правому краю */
+        /* «Сравнение по годам» — прижата к правому краю */
         .period-btn.compare {
             margin-left: auto;
-            min-width: auto;
+            width: auto;
+            flex: 0 0 auto;
+            min-width: 140px;
         }
 
         .chart-container {
@@ -187,7 +190,8 @@
             .stat-item p { font-size: 14px; }
             .stat-item h3 { font-size: 8px; }
             .stat-item p small { font-size: 8px; }
-            .period-btn { padding: 5px 6px; font-size: 11px; min-width: 52px; }
+            .period-btn { width: 75px; flex: 0 0 75px; font-size: 11px; padding: 5px 6px; }
+            .period-btn.compare { min-width: 120px; font-size: 11px; }
         }
         @media (max-width: 600px) {
             body { padding: 6px; }
@@ -199,12 +203,14 @@
             .stat-item p small { font-size: 7px; }
             .trend-arrow { font-size: 11px; margin-left: 2px; }
             .period-bar { gap: 3px; margin-bottom: 5px; }
-            .period-btn { padding: 4px 5px; font-size: 10px; border-radius: 6px; min-width: 44px; }
+            .period-btn { width: 62px; flex: 0 0 62px; font-size: 10px; padding: 4px 5px; border-radius: 6px; }
+            .period-btn.compare { min-width: 100px; font-size: 10px; }
             .chart-container { padding: 4px; min-height: 200px; }
         }
         @media (max-width: 420px) {
             .stat-item h3 { display: none; }
-            .period-btn { font-size: 9px; padding: 4px 4px; min-width: 38px; }
+            .period-btn { width: 54px; flex: 0 0 54px; font-size: 9px; padding: 4px 4px; }
+            .period-btn.compare { min-width: 90px; font-size: 9px; }
         }
         @media (max-width: 900px) and (orientation: landscape) {
             .stats { grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 4px; }
@@ -212,7 +218,8 @@
             .stat-item h3 { font-size: 7px; margin-bottom: 1px; }
             .stat-item p { font-size: 12px; }
             .stat-item p small { font-size: 7px; }
-            .period-btn { padding: 4px 6px; font-size: 10px; }
+            .period-btn { width: 75px; flex: 0 0 75px; font-size: 10px; padding: 4px 6px; }
+            .period-btn.compare { min-width: 120px; font-size: 10px; }
             .chart-container { min-height: 180px; }
         }
     </style>
@@ -290,6 +297,9 @@
 
         const V_AXIS_DATE = new Date(2024, 7, 1);
 
+        // Максимальная дата — 31.12.2026. Всё, что позже, отбрасываем.
+        const MAX_DATE = new Date(2026, 11, 31, 23, 59, 59);
+
         let ALL_ENTRIES = [];
         let CURRENT_PERIOD = 'all';
         let COMPARE_MODE = false;
@@ -360,23 +370,19 @@
         }
 
         // ============================================================
-        //  Параметры barPercentage/categoryPercentage по периоду
+        //  Параметры столбцов по периоду
         // ============================================================
-        // Размер "зазора" между столбцами задаётся через barPercentage.
-        // 1.0 = столбцы вплотную, меньше 1.0 — появляется зазор.
-        // Для периодов 1m/3m/6m — уменьшили barPercentage на ~60%
-        // (было 0.7 → 0.28), для 1y — зазор 1 пиксель (≈0.97),
-        // для all — без зазора (1.0).
+        // Зазоры между столбцами:
+        //   1м / 3м / 6м — 0.85 (узкие зазоры ~15%)
+        //   1г           — ~0.97, ровно 1px зазор (вычисляется динамически)
+        //   всё время    — 1.0 (без зазора)
         function getBarParams(period) {
             if (period === '1m' || period === '3m' || period === '6m') {
-                return { barPercentage: 0.28, categoryPercentage: 0.9 };
+                return { barPercentage: 0.85, categoryPercentage: 0.95 };
             }
             if (period === '1y') {
-                // Практически вплотную, но с 1px зазором — вычислим в createNormalChart,
-                // здесь возвращаем флаг для расчёта
                 return { barPercentage: 0.97, categoryPercentage: 1.0 };
             }
-            // all — без зазора
             return { barPercentage: 1.0, categoryPercentage: 1.0 };
         }
 
@@ -720,7 +726,7 @@
                     borderColor: color,
                     backgroundColor: color,
                     showLine: false,
-                    // Уменьшено на 30%: было 3 → стало 2 (для маленьких точек)
+                    // Уменьшено на 30% относительно 3px
                     pointRadius: 2,
                     pointHoverRadius: 4,
                     pointBackgroundColor: color,
@@ -746,14 +752,13 @@
             const showMonthYear = !showDateTicks;
             const padBottom = isLandscapePhone ? 60 : (isSmall ? 65 : 70);
 
-            // Параметры столбцов по периоду
             const barParams = getBarParams(CURRENT_PERIOD);
 
             // Для 1 год — вычисляем barPercentage так, чтобы зазор был ровно 1px
             let barPercentage = barParams.barPercentage;
             if (CURRENT_PERIOD === '1y') {
                 const area = document.getElementById('chartContainer').getBoundingClientRect();
-                const areaWidth = area.width - 24; // padding
+                const areaWidth = area.width - 24;
                 const n = labels.length || 365;
                 const catWidth = areaWidth / n;
                 barPercentage = Math.max(0.01, (catWidth - 1) / catWidth);
@@ -881,7 +886,7 @@
 
             const MONTH_MID_DAY = [15, 45, 74, 105, 135, 166, 196, 227, 258, 288, 319, 349];
 
-            const monthLabelsPlugin = {
+            const compareMonthLabelsPlugin = {
                 id: 'compareMonths',
                 afterDraw(c) {
                     const { ctx, chartArea, scales } = c;
@@ -906,7 +911,7 @@
 
             chart = new Chart(ctx, {
                 type: 'line',
-                plugins: [monthLabelsPlugin],
+                plugins: [compareMonthLabelsPlugin],
                 data: { datasets },
                 options: {
                     responsive: true,
@@ -967,6 +972,7 @@
                         },
                         x: {
                             type: 'linear',
+                            // Максимальный день года, соответствующий 31.12.2026
                             min: 1,
                             max: 365,
                             title: { display: false },
@@ -1012,7 +1018,7 @@
                 }
                 if (dateIndex === -1 || weightIndex === -1) { dateIndex = 0; weightIndex = 1; headerRowIndex = 0; }
 
-                const entries = [];
+                let entries = [];
                 for (let i = headerRowIndex + 1; i < rows.length; i++) {
                     const row = rows[i];
                     if (row.length <= Math.max(dateIndex, weightIndex)) continue;
@@ -1043,6 +1049,12 @@
                 }
 
                 if (entries.length === 0) throw new Error('Не удалось извлечь корректные данные.');
+
+                // --- Ограничение по 31.12.2026 ---
+                entries = entries.filter(e => e.date <= MAX_DATE);
+
+                if (entries.length === 0) throw new Error('После фильтрации по дате 31.12.2026 данные отсутствуют.');
+
                 entries.sort((a, b) => a.date - b.date);
                 ALL_ENTRIES = entries;
 
