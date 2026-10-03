@@ -389,7 +389,8 @@
             return { barPercentage: 1.0, categoryPercentage: 1.0 };
         }
 
-        // ОБЩИЙ padBottom для всех режимов — ось X больше не «прыгает»
+        // Единый padBottom для всех режимов.
+        // Достаточно места: 70px (большой), 65px (телефон), 60px (телефон альбом)
         function getPadBottom() {
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
@@ -557,14 +558,14 @@
             }
         };
 
+        // Подписи месяцев — теперь показываются ВСЕГДА (включая 1м / 3м / 1г / 6м)
         const monthLabelsPlugin = {
             id: 'monthLabels',
             afterDraw(chart) {
                 if (chart._compareMode) return;
-                if (!chart._showMonthYearLabels) return;
+                if (!chart._monthSegments || chart._monthSegments.length === 0) return;
                 const { ctx, chartArea, scales } = chart;
                 if (!chartArea) return;
-                if (!chart._monthSegments || chart._monthSegments.length === 0) return;
                 const xScale = scales.x;
                 const chartWidth = chartArea.right - chartArea.left;
                 const isSmall = chartWidth < 400;
@@ -592,7 +593,7 @@
             }
         };
 
-        // Плагин подписей годов — работает и для 1м/3м, и для 6м/1г/всё
+        // Подписи годов — теперь ВСЕГДА показываются, одинаково для всех режимов
         const yearLabelsPlugin = {
             id: 'yearLabels',
             afterDraw(chart) {
@@ -604,11 +605,7 @@
                 const chartWidth = chartArea.right - chartArea.left;
                 const isSmall = chartWidth < 400;
                 const fontPx = isSmall ? 9 : 11;
-                // Для 1м/3м — отступ больше (там даты наклонены и занимают больше места)
-                // Для 6м/1г/всё — отступ как раньше (там только месяцы)
-                const offset = chart._showDateTicks
-                    ? (isSmall ? 55 : 60)
-                    : (isSmall ? 38 : 42);
+                const offset = isSmall ? 38 : 42;
                 ctx.save();
                 ctx.font = `bold ${fontPx}px Inter, sans-serif`;
                 ctx.fillStyle = 'rgba(200, 216, 232, 0.55)';
@@ -815,8 +812,6 @@
             const padTop = isLandscapePhone ? 26 : (isSmall ? 28 : 32);
             const padBottom = getPadBottom();
 
-            const showDateTicks = (CURRENT_PERIOD === '1m' || CURRENT_PERIOD === '3m');
-            const showMonthYear = !showDateTicks;
             const showMonthGrid = (CURRENT_PERIOD === '6m' || CURRENT_PERIOD === '1y' || CURRENT_PERIOD === 'all');
 
             const barParams = getBarParams(CURRENT_PERIOD);
@@ -892,17 +887,7 @@
                         x: {
                             title: { display: false },
                             grid: { display: false },
-                            ticks: showDateTicks ? {
-                                display: true,
-                                color: '#c8d8e8',
-                                font: { size: 9 },
-                                maxRotation: 90,
-                                minRotation: 90,
-                                autoSkip: false,
-                                callback: function(value) {
-                                    return this.getLabelForValue(value);
-                                }
-                            } : {
+                            ticks: {
                                 display: false
                             }
                         }
@@ -911,9 +896,7 @@
             });
 
             chart._compareMode = false;
-            chart._showMonthYearLabels = showMonthYear;
             chart._showMonthGrid = showMonthGrid;
-            chart._showDateTicks = showDateTicks;
             chart._jan1Indices = jan1Indices;
             chart._yearSegments = yearSegments;
             chart._monthSegments = monthSegments;
@@ -949,27 +932,35 @@
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
             const padTop = isLandscapePhone ? 26 : (isSmall ? 28 : 32);
-            const padBottom = isLandscapePhone ? 60 : (isSmall ? 65 : 70);
+            // Тот же padBottom, что и в обычном режиме — высоты совпадут
+            const padBottom = getPadBottom();
 
             const MONTH_MID_DAY = [15, 45, 74, 105, 135, 166, 196, 227, 258, 288, 319, 349];
 
+            // Подписи месяцев внизу для режима сравнения
             const compareMonthLabelsPlugin = {
                 id: 'compareMonths',
                 afterDraw(c) {
                     const { ctx, chartArea, scales } = c;
                     if (!chartArea) return;
                     const xScale = scales.x;
-                    const fontPx = isSmall ? 9 : 11;
+                    const fontPx = isSmall ? 8 : 10;
                     ctx.save();
                     ctx.font = `bold ${fontPx}px Inter, sans-serif`;
                     ctx.fillStyle = 'rgba(200, 216, 232, 0.75)';
                     ctx.textAlign = 'center';
-                    ctx.textBaseline = 'top';
-                    const y = chartArea.bottom + 6;
+                    ctx.textBaseline = 'middle';
+                    // Вертикальные подписи месяцев
                     for (let m = 0; m < 12; m++) {
                         const x = xScale.getPixelForValue(MONTH_MID_DAY[m]);
                         if (x >= chartArea.left && x <= chartArea.right) {
-                            ctx.fillText(MONTHS_RU[m], x, y);
+                            ctx.save();
+                            ctx.translate(x, chartArea.bottom + 6);
+                            ctx.rotate(-Math.PI / 2);
+                            ctx.textAlign = 'right';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(MONTHS_RU[m], 0, 0);
+                            ctx.restore();
                         }
                     }
                     ctx.restore();
