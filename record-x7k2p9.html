@@ -36,7 +36,7 @@
         }
         .stats {
             display: grid;
-            grid-template-columns: repeat(6, 1fr);
+            grid-template-columns: repeat(4, 1fr) 2fr;
             gap: 8px;
             margin: 0 0 10px;
             flex-shrink: 0;
@@ -44,7 +44,6 @@
         }
         .stat-item {
             background: linear-gradient(135deg, #1e2a3a 0%, #243447 100%);
-            /* Высота плашек увеличена в 2 раза (padding 8px + 8px вместо 4px + 4px) */
             padding: 8px 6px;
             border-radius: 10px;
             text-align: center;
@@ -102,7 +101,7 @@
             line-height: 1.1;
         }
 
-        /* ============ КНОПКА ЗАПИСИ — квадратная ============ */
+        /* ============ КНОПКА ЗАПИСИ — прямоугольная, 2× высоты ============ */
         .voice-btn {
             background: #e74c3c;
             border-radius: 10px;
@@ -117,12 +116,13 @@
             text-align: center;
             opacity: 0;
             animation: fadeInUp 0.5s 0.30s forwards;
-            aspect-ratio: 1 / 1;
+            /* Ширина в 2 раза больше высоты */
+            aspect-ratio: 2 / 1;
             height: 100%;
             width: auto;
             min-width: 0;
-            max-width: 100%;
-            justify-self: center;
+            /* Выравнивание по правому краю своей ячейки */
+            justify-self: end;
             align-self: stretch;
             padding: 0;
             overflow: hidden;
@@ -279,7 +279,7 @@
         }
         @media (max-width: 900px) {
             .stats {
-                grid-template-columns: repeat(6, 1fr);
+                grid-template-columns: repeat(4, 1fr) 2fr;
                 gap: 7px;
                 margin-bottom: 8px;
             }
@@ -292,7 +292,7 @@
             body { padding: 6px; }
             .container { padding: 8px; border-radius: 12px; }
             .stats {
-                grid-template-columns: repeat(6, 1fr);
+                grid-template-columns: repeat(4, 1fr) 2fr;
                 gap: 5px;
                 margin-bottom: 6px;
             }
@@ -315,7 +315,7 @@
         }
         @media (max-width: 900px) and (orientation: landscape) {
             .stats {
-                grid-template-columns: repeat(6, 1fr);
+                grid-template-columns: repeat(4, 1fr) 2fr;
                 gap: 5px;
                 margin-bottom: 6px;
             }
