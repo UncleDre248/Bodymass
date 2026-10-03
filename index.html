@@ -823,7 +823,11 @@
             const padTop = isLandscapePhone ? 26 : (isSmall ? 28 : 32);
             const padBottom = getPadBottom();
 
-            const showMonthGrid = (CURRENT_PERIOD === '6m' || CURRENT_PERIOD === '1y' || CURRENT_PERIOD === 'all');
+            // Вертикальная сетка по месяцам:
+            //  - "Всё время" — только по годам (без месяцев)
+            //  - 1 год / 6 месяцев / 3 месяца / 1 месяц — по месяцам
+            const showMonthGrid = (CURRENT_PERIOD === '6m' || CURRENT_PERIOD === '1y' ||
+                                   CURRENT_PERIOD === '3m' || CURRENT_PERIOD === '1m');
 
             const barParams = getBarParams(CURRENT_PERIOD);
 
