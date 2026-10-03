@@ -34,9 +34,11 @@
             min-height: 0;
             min-width: 0;
         }
+        /* 6 колонок: 5 плашек по 1fr + кнопка 2fr = 7fr.
+           Кнопка больше не переносится на новую строку. */
         .stats {
             display: grid;
-            grid-template-columns: repeat(4, 1fr) 2fr;
+            grid-template-columns: repeat(5, 1fr) 2fr;
             gap: 8px;
             margin: 0 0 10px;
             flex-shrink: 0;
@@ -102,6 +104,9 @@
         }
 
         /* ============ КНОПКА ЗАПИСИ ============ */
+        /* Высота всегда равна высоте плашек (align-self: stretch).
+           Ширина — размер ячейки (2fr в сетке).
+           Никакого aspect-ratio, никакого переноса. */
         .voice-btn {
             background: #e74c3c;
             border-radius: 10px;
@@ -116,31 +121,30 @@
             text-align: center;
             opacity: 0;
             animation: fadeInUp 0.5s 0.30s forwards;
-            aspect-ratio: 2 / 1;
             height: 100%;
-            width: auto;
+            width: 100%;
             min-width: 0;
-            justify-self: end;
-            align-self: stretch;
             padding: 0 8px;
             overflow: hidden;
+            position: relative;
         }
         .voice-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(231, 76, 60, 0.5);
         }
         .voice-btn:active {
-            transform: scale(0.96);
+            transform: scale(0.98);
         }
         .voice-btn .icon {
             font-size: 30px;
             line-height: 1;
         }
-        /* Состояние "слушаю" — кнопка тёмно-красная, пульсирует, показывает «Говорите» */
+        /* Состояние "слушаю" — тёмно-красная кнопка, пульсирует */
         .voice-btn.listening {
             background: #c0392b;
             animation: voicePulse 1.2s infinite;
         }
+        /* Состояние "слушаю" — показываем текст вместо иконки */
         .voice-btn.listening .icon {
             display: none;
         }
@@ -155,11 +159,14 @@
         .voice-btn.listening .listening-text {
             display: block;
         }
-        /* Состояние "показываю результат" — зелёная, с цифрой и датой */
+        /* Состояние "показываю результат" — зелёная */
         .voice-btn.showing {
             background: #27ae60;
         }
         .voice-btn.showing .icon {
+            display: none;
+        }
+        .voice-btn.showing .listening-text {
             display: none;
         }
         .voice-btn .result {
@@ -169,7 +176,6 @@
             line-height: 1.1;
             white-space: normal;
             word-break: break-word;
-            padding: 2px;
         }
         .voice-btn.showing .result {
             display: block;
@@ -300,7 +306,7 @@
         }
         @media (max-width: 900px) {
             .stats {
-                grid-template-columns: repeat(4, 1fr) 2fr;
+                grid-template-columns: repeat(5, 1fr) 2fr;
                 gap: 7px;
                 margin-bottom: 8px;
             }
@@ -314,7 +320,7 @@
             body { padding: 6px; }
             .container { padding: 8px; border-radius: 12px; }
             .stats {
-                grid-template-columns: repeat(4, 1fr) 2fr;
+                grid-template-columns: repeat(5, 1fr) 2fr;
                 gap: 5px;
                 margin-bottom: 6px;
             }
@@ -339,7 +345,7 @@
         }
         @media (max-width: 900px) and (orientation: landscape) {
             .stats {
-                grid-template-columns: repeat(4, 1fr) 2fr;
+                grid-template-columns: repeat(5, 1fr) 2fr;
                 gap: 5px;
                 margin-bottom: 6px;
             }
@@ -1032,8 +1038,6 @@
         // ============================================================
         const voiceBtn = document.getElementById('voiceBtn');
         const voiceStatus = document.getElementById('voiceStatus');
-        const iconEl = document.getElementById('voiceIcon');
-        const listeningTextEl = voiceBtn.querySelector('.listening-text');
         const resultEl = voiceBtn.querySelector('.result');
 
         const MONTHS_RU_FULL = [
@@ -1157,7 +1161,6 @@
             recognition.maxAlternatives = 1;
 
             voiceBtn.classList.add('listening');
-            // Надпись «Говорите» теперь показывается прямо на кнопке через CSS
 
             recognition.onresult = async (event) => {
                 voiceBtn.classList.remove('listening');
