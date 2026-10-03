@@ -54,7 +54,6 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            position: relative;
         }
         .stat-item:nth-child(1) { animation-delay: 0.05s; }
         .stat-item:nth-child(2) { animation-delay: 0.10s; }
@@ -100,7 +99,6 @@
             white-space: nowrap;
             line-height: 1.1;
         }
-        /* Стрелка рядом со значением текущей массы */
         .trend-arrow {
             font-size: 14px;
             margin-left: 4px;
@@ -111,20 +109,20 @@
         .trend-down { color: #27ae60; }
         .trend-same { color: #8aa0b4; }
 
-        /* ============ ПЕРЕКЛЮЧАТЕЛЬ ПЕРИОДА ============ */
+        /* ============ ПАНЕЛЬ КНОПОК ПЕРИОДА ============ */
         .period-bar {
             display: flex;
             gap: 6px;
             margin: 0 0 8px;
-            flex-wrap: wrap;
             flex-shrink: 0;
-            align-items: center;
+            align-items: stretch;
         }
         .period-btn {
-            background: #1e2a3a;
+            /* Фон как у диаграммы */
+            background: #0a1018;
             color: #c8d8e8;
             border: 1px solid #2c3a4f;
-            padding: 6px 12px;
+            padding: 6px 8px;
             border-radius: 8px;
             font-size: 12px;
             font-weight: 600;
@@ -132,25 +130,19 @@
             transition: background 0.15s, color 0.15s, border-color 0.15s;
             white-space: nowrap;
             user-select: none;
+            /* Одинаковая ширина: все кнопки с одинаковой basis */
+            flex: 1 1 0;
+            text-align: center;
         }
-        .period-btn:hover {
-            background: #243447;
-        }
+        .period-btn:hover { background: #131c28; }
         .period-btn.active {
             background: #4db8ff;
             color: #001236;
             border-color: #4db8ff;
         }
-        /* Кнопка "Сравнение по годам" — отдельного цвета, чтобы не путалась с периодами */
+        /* Кнопка "Сравнение по годам" — как обычные кнопки */
         .period-btn.compare {
-            margin-left: auto;
-            background: #2c3a4f;
-            color: #e8eef5;
-            border-color: #4db8ff;
-        }
-        .period-btn.compare.active {
-            background: #4db8ff;
-            color: #001236;
+            flex: 1.6 1 0; /* чуть шире, т.к. длинный текст */
         }
 
         .chart-container {
@@ -186,53 +178,40 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* ============ АДАПТИВ ============ */
         @media (max-width: 1100px) {
             .stat-item p { font-size: 15px; }
         }
         @media (max-width: 900px) {
-            .stats {
-                grid-template-columns: repeat(5, 1fr);
-                gap: 7px;
-                margin-bottom: 6px;
-            }
+            .stats { grid-template-columns: repeat(5, 1fr); gap: 7px; margin-bottom: 6px; }
             .stat-item p { font-size: 14px; }
             .stat-item h3 { font-size: 8px; }
             .stat-item p small { font-size: 8px; }
-            .period-btn { padding: 5px 9px; font-size: 11px; }
+            .period-btn { padding: 5px 6px; font-size: 11px; }
         }
         @media (max-width: 600px) {
             body { padding: 6px; }
             .container { padding: 8px; border-radius: 12px; }
-            .stats {
-                grid-template-columns: repeat(5, 1fr);
-                gap: 5px;
-                margin-bottom: 6px;
-            }
+            .stats { grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 6px; }
             .stat-item { padding: 6px 3px; border-radius: 8px; }
             .stat-item h3 { font-size: 7px; letter-spacing: 0.3px; margin-bottom: 2px; }
             .stat-item p { font-size: 12px; }
             .stat-item p small { font-size: 7px; }
             .trend-arrow { font-size: 11px; margin-left: 2px; }
-            .period-bar { gap: 4px; margin-bottom: 5px; }
-            .period-btn { padding: 4px 7px; font-size: 10px; border-radius: 6px; }
+            .period-bar { gap: 3px; margin-bottom: 5px; }
+            .period-btn { padding: 4px 5px; font-size: 10px; border-radius: 6px; }
             .chart-container { padding: 4px; min-height: 200px; }
         }
         @media (max-width: 420px) {
             .stat-item h3 { display: none; }
-            .period-btn.compare { margin-left: 0; }
+            .period-btn { font-size: 9px; padding: 4px 4px; }
         }
         @media (max-width: 900px) and (orientation: landscape) {
-            .stats {
-                grid-template-columns: repeat(5, 1fr);
-                gap: 5px;
-                margin-bottom: 4px;
-            }
+            .stats { grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 4px; }
             .stat-item { padding: 5px 3px; }
             .stat-item h3 { font-size: 7px; margin-bottom: 1px; }
             .stat-item p { font-size: 12px; }
             .stat-item p small { font-size: 7px; }
-            .period-btn { padding: 4px 8px; font-size: 10px; }
+            .period-btn { padding: 4px 6px; font-size: 10px; }
             .chart-container { min-height: 180px; }
         }
     </style>
@@ -266,14 +245,13 @@
                 </div>
             </div>
 
-            <!-- Панель периодов -->
             <div class="period-bar" id="periodBar">
                 <button class="period-btn" data-period="1m">1 месяц</button>
                 <button class="period-btn" data-period="3m">3 месяца</button>
                 <button class="period-btn" data-period="6m">6 месяцев</button>
                 <button class="period-btn" data-period="1y">1 год</button>
                 <button class="period-btn active" data-period="all">Всё время</button>
-                <button class="period-btn compare" id="compareBtn" title="Наложить графики по годам">📅 Сравнение по годам</button>
+                <button class="period-btn compare" id="compareBtn">Сравнение по годам</button>
             </div>
 
             <div class="chart-container" id="chartContainer">
@@ -305,23 +283,15 @@
             76: '#B20000'
         };
 
-        // Палитра для линий сравнения по годам
         const YEAR_COLORS = [
-            '#4db8ff', // 2024
-            '#f39c12', // 2025
-            '#e74c3c', // 2026
-            '#27ae60', // 2027
-            '#9b59b6', // 2028
-            '#00cec9', // 2029
-            '#e67e22'  // 2030
+            '#4db8ff', '#f39c12', '#e74c3c', '#27ae60', '#9b59b6', '#00cec9', '#e67e22'
         ];
 
         const V_AXIS_DATE = new Date(2024, 7, 1);
 
-        // Глобальные данные
-        let ALL_ENTRIES = [];      // [{date: Date, weight: Number}, ...]
-        let CURRENT_PERIOD = 'all'; // '1m' | '3m' | '6m' | '1y' | 'all'
-        let COMPARE_MODE = false;   // сравнение по годам
+        let ALL_ENTRIES = [];
+        let CURRENT_PERIOD = 'all';
+        let COMPARE_MODE = false;
         let chart = null;
 
         function colorForWeight(w) {
@@ -388,9 +358,6 @@
             ctx.closePath();
         }
 
-        // ============================================================
-        //  Плагины для обычного (гистограмма) режима
-        // ============================================================
         const yAxisLinePlugin = {
             id: 'yAxisLine',
             beforeDatasetsDraw(chart) {
@@ -401,12 +368,14 @@
                 const xScale = scales.x;
                 const x = xScale.getPixelForValue(chart._vAxisIndex);
                 if (x < chartArea.left || x > chartArea.right) return;
+                const halfBar = chart._barWidthHalf || 0;
+                const xLeft = x - halfBar;
                 ctx.save();
                 ctx.beginPath();
                 ctx.lineWidth = 1;
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-                ctx.moveTo(x, chartArea.top);
-                ctx.lineTo(x, chartArea.bottom);
+                ctx.moveTo(xLeft, chartArea.top);
+                ctx.lineTo(xLeft, chartArea.bottom);
                 ctx.stroke();
                 ctx.restore();
             }
@@ -500,10 +469,8 @@
         const monthLabelsPlugin = {
             id: 'monthLabels',
             afterDraw(chart) {
-                if (chart._compareMode) {
-                    // В режиме сравнения свои подписи — рисуются отдельно ниже
-                    return;
-                }
+                if (chart._compareMode) return;
+                if (!chart._showMonthYearLabels) return;
                 const { ctx, chartArea, scales } = chart;
                 if (!chartArea) return;
                 if (!chart._monthSegments || chart._monthSegments.length === 0) return;
@@ -538,6 +505,7 @@
             id: 'yearLabels',
             afterDraw(chart) {
                 if (chart._compareMode) return;
+                if (!chart._showMonthYearLabels) return;
                 const { ctx, chartArea, scales } = chart;
                 if (!chartArea) return;
                 if (!chart._yearSegments || chart._yearSegments.length === 0) return;
@@ -564,56 +532,17 @@
             }
         };
 
-        // Плагин для режима сравнения: подписи месяцев под осью
-        const compareMonthLabelsPlugin = {
-            id: 'compareMonthLabels',
-            afterDraw(chart) {
-                if (!chart._compareMode) return;
-                const { ctx, chartArea, scales } = chart;
-                if (!chartArea) return;
-                const xScale = scales.x;
-                const chartWidth = chartArea.right - chartArea.left;
-                const isSmall = chartWidth < 400;
-                const fontPx = isSmall ? 9 : 11;
-
-                ctx.save();
-                ctx.font = `bold ${fontPx}px Inter, sans-serif`;
-                ctx.fillStyle = 'rgba(200, 216, 232, 0.75)';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'top';
-                const y = chartArea.bottom + 6;
-
-                // 12 месяцев — равномерно по оси X (0...11)
-                for (let m = 0; m < 12; m++) {
-                    const x = xScale.getPixelForValue(m);
-                    if (x >= chartArea.left && x <= chartArea.right) {
-                        ctx.fillText(MONTHS_RU[m], x, y);
-                    }
-                }
-                ctx.restore();
-            }
-        };
-
-        // ============================================================
-        //  Фильтрация данных по периоду
-        // ============================================================
         function filterByPeriod(entries, period) {
             if (period === 'all' || entries.length === 0) return entries.slice();
-
             const lastDate = entries[entries.length - 1].date;
             const from = new Date(lastDate);
-
             if (period === '1m') from.setMonth(from.getMonth() - 1);
             else if (period === '3m') from.setMonth(from.getMonth() - 3);
             else if (period === '6m') from.setMonth(from.getMonth() - 6);
             else if (period === '1y') from.setFullYear(from.getFullYear() - 1);
-
             return entries.filter(e => e.date >= from);
         }
 
-        // ============================================================
-        //  Обновление статистики
-        // ============================================================
         function updateStats(entries) {
             const currentEl = document.getElementById('currentWeight');
             const changeEl = document.getElementById('totalChange');
@@ -634,29 +563,22 @@
             const prevEntry = entries.length > 1 ? entries[entries.length - 2] : null;
             const firstEntry = entries[0];
 
-            // Текущая масса + стрелка изменения к предыдущему измерению
             let arrow = '';
             if (prevEntry) {
                 const diff = lastEntry.weight - prevEntry.weight;
-                if (Math.abs(diff) < 0.05) {
-                    arrow = '<span class="trend-arrow trend-same">→</span>';
-                } else if (diff > 0) {
-                    arrow = '<span class="trend-arrow trend-up">↑</span>';
-                } else {
-                    arrow = '<span class="trend-arrow trend-down">↓</span>';
-                }
+                if (Math.abs(diff) < 0.05) arrow = '<span class="trend-arrow trend-same">→</span>';
+                else if (diff > 0) arrow = '<span class="trend-arrow trend-up">↑</span>';
+                else arrow = '<span class="trend-arrow trend-down">↓</span>';
             }
             currentEl.innerHTML = lastEntry.weight.toFixed(1) + ' кг' + arrow +
                 '<small>' + formatDateShort(lastEntry.date) + '</small>';
             currentEl.style.color = colorForWeight(lastEntry.weight);
 
-            // Изменение за период
             const change = lastEntry.weight - firstEntry.weight;
             const sign = change > 0 ? '+' : '';
             const range = formatDateShort(firstEntry.date) + ' → ' + formatDateShort(lastEntry.date);
             changeEl.innerHTML = sign + change.toFixed(1) + ' кг<small>' + range + '</small>';
 
-            // Максимум и минимум
             let maxW = -Infinity, minW = Infinity;
             let maxD = null, minD = null;
             entries.forEach(e => {
@@ -668,15 +590,10 @@
             minEl.innerHTML = minW.toFixed(1) + ' кг<small>' + formatDateShort(minD) + '</small>';
             minEl.style.color = colorForWeight(minW);
 
-            // Колебание
             const swing = maxW - minW;
-            const swingRange = minW.toFixed(1) + ' → ' + maxW.toFixed(1);
-            swingEl.innerHTML = swing.toFixed(1) + ' кг<small>' + swingRange + '</small>';
+            swingEl.innerHTML = swing.toFixed(1) + ' кг<small>' + minW.toFixed(1) + ' → ' + maxW.toFixed(1) + '</small>';
         }
 
-        // ============================================================
-        //  Обычный режим: гистограмма по дням (как было)
-        // ============================================================
         function buildNormalChartData(entries) {
             if (entries.length === 0) {
                 return { labels: [], weights: [], jan1Indices: [], yearSegments: [], monthSegments: [], vAxisIndex: 0 };
@@ -728,27 +645,27 @@
             if (curYear !== null) yearSegments.push({ year: curYear, startIdx: startIdx, endIdx: dates.length - 1 });
 
             const monthSegments = [];
-            let curMonthKey = null, mStartIdx = 0;
+            let prevKey = null, segStart = 0;
             for (let i = 0; i < dates.length; i++) {
                 const d = dates[i];
                 const key = d.getFullYear() * 100 + d.getMonth();
-                if (curMonthKey === null) { curMonthKey = key; mStartIdx = i; }
-                else if (key !== curMonthKey) {
+                if (prevKey === null) { prevKey = key; segStart = i; }
+                else if (key !== prevKey) {
                     monthSegments.push({
-                        year: dates[mStartIdx].getFullYear(),
-                        month: dates[mStartIdx].getMonth(),
-                        startIdx: mStartIdx,
+                        year: dates[segStart].getFullYear(),
+                        month: dates[segStart].getMonth(),
+                        startIdx: segStart,
                         endIdx: i - 1
                     });
-                    curMonthKey = key;
-                    mStartIdx = i;
+                    prevKey = key;
+                    segStart = i;
                 }
             }
-            if (curMonthKey !== null) {
+            if (prevKey !== null) {
                 monthSegments.push({
-                    year: dates[mStartIdx].getFullYear(),
-                    month: dates[mStartIdx].getMonth(),
-                    startIdx: mStartIdx,
+                    year: dates[segStart].getFullYear(),
+                    month: dates[segStart].getMonth(),
+                    startIdx: segStart,
                     endIdx: dates.length - 1
                 });
             }
@@ -756,11 +673,7 @@
             return { labels, weights, jan1Indices, yearSegments, monthSegments, vAxisIndex };
         }
 
-        // ============================================================
-        //  Режим сравнения: линии по годам, X = день года (1..366)
-        // ============================================================
         function buildCompareChartData(entries) {
-            // Группируем записи по годам
             const byYear = {};
             entries.forEach(e => {
                 const y = e.date.getFullYear();
@@ -783,12 +696,12 @@
                     label: String(year),
                     data: points,
                     borderColor: color,
-                    backgroundColor: hexToRgba(color, 0.1),
-                    borderWidth: 2,
-                    pointRadius: 2,
-                    pointHoverRadius: 5,
-                    tension: 0.25,
-                    fill: false,
+                    backgroundColor: color,
+                    showLine: false,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: color,
+                    pointBorderColor: color,
                     parsing: false
                 });
             });
@@ -796,9 +709,6 @@
             return { datasets, years };
         }
 
-        // ============================================================
-        //  Создание графика (обычный режим)
-        // ============================================================
         function createNormalChart(entries) {
             if (chart) { chart.destroy(); chart = null; }
             const ctx = document.getElementById('weightChart').getContext('2d');
@@ -808,10 +718,10 @@
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
             const padTop = isLandscapePhone ? 6 : (isSmall ? 8 : 10);
+
+            const showDateTicks = (CURRENT_PERIOD === '1m' || CURRENT_PERIOD === '3m');
+            const showMonthYear = !showDateTicks;
             const padBottom = isLandscapePhone ? 60 : (isSmall ? 65 : 70);
-            const padLeft = 12;
-            const padRight = 12;
-            const Y_AXIS_SHIFT = 8;
 
             chart = new Chart(ctx, {
                 type: 'bar',
@@ -825,8 +735,8 @@
                         borderColor: barColors,
                         borderWidth: 0,
                         borderRadius: 2,
-                        barPercentage: 1.0,
-                        categoryPercentage: 1.0
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.8
                     }]
                 },
                 options: {
@@ -834,7 +744,7 @@
                     maintainAspectRatio: false,
                     animation: { duration: 500, easing: 'easeOutQuart' },
                     interaction: { mode: 'index', intersect: false },
-                    layout: { padding: { top: padTop, bottom: padBottom, left: padLeft, right: padRight } },
+                    layout: { padding: { top: padTop, bottom: padBottom, left: 12, right: 12 } },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
@@ -869,24 +779,48 @@
                                 font: { size: 10 },
                                 padding: 4
                             },
-                            afterFit(scale) { scale.width += Y_AXIS_SHIFT; }
+                            afterFit(scale) { scale.width += 8; }
                         },
                         x: {
                             title: { display: false },
                             grid: { display: false },
-                            ticks: { display: false, autoSkip: false, maxRotation: 0, minRotation: 0 }
+                            ticks: showDateTicks ? {
+                                display: true,
+                                color: '#c8d8e8',
+                                font: { size: 9 },
+                                maxRotation: 90,
+                                minRotation: 90,
+                                autoSkip: true,
+                                maxTicksLimit: 30,
+                                callback: function(value) {
+                                    return this.getLabelForValue(value);
+                                }
+                            } : {
+                                display: false
+                            }
                         }
                     }
                 }
             });
 
             chart._compareMode = false;
+            chart._showMonthYearLabels = showMonthYear;
             chart._jan1Indices = jan1Indices;
             chart._yearSegments = yearSegments;
             chart._monthSegments = monthSegments;
             chart._vAxisIndex = vAxisIndex;
 
-            // Для плагина max/min линий
+            setTimeout(() => {
+                if (!chart) return;
+                const area = chart.chartArea;
+                const n = chart.data.labels.length;
+                if (!area || n === 0) return;
+                const catWidth = (area.right - area.left) / n;
+                const barW = catWidth * 0.8 * 0.7;
+                chart._barWidthHalf = barW / 2;
+                chart.draw();
+            }, 0);
+
             let maxW = null, minW = null;
             entries.forEach(e => {
                 if (maxW === null || e.weight > maxW) maxW = e.weight;
@@ -898,9 +832,6 @@
             window.weightChartInstance = chart;
         }
 
-        // ============================================================
-        //  Создание графика (режим сравнения по годам)
-        // ============================================================
         function createCompareChart(entries) {
             if (chart) { chart.destroy(); chart = null; }
             const ctx = document.getElementById('weightChart').getContext('2d');
@@ -910,20 +841,42 @@
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
             const padTop = isLandscapePhone ? 6 : (isSmall ? 8 : 10);
             const padBottom = isLandscapePhone ? 30 : (isSmall ? 35 : 40);
-            const padLeft = 12;
-            const padRight = 12;
-            const Y_AXIS_SHIFT = 8;
+
+            const MONTH_MID_DAY = [15, 45, 74, 105, 135, 166, 196, 227, 258, 288, 319, 349];
+
+            const monthLabelsPlugin = {
+                id: 'compareMonths',
+                afterDraw(c) {
+                    const { ctx, chartArea, scales } = c;
+                    if (!chartArea) return;
+                    const xScale = scales.x;
+                    const fontPx = isSmall ? 9 : 11;
+                    ctx.save();
+                    ctx.font = `bold ${fontPx}px Inter, sans-serif`;
+                    ctx.fillStyle = 'rgba(200, 216, 232, 0.75)';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'top';
+                    const y = chartArea.bottom + 6;
+                    for (let m = 0; m < 12; m++) {
+                        const x = xScale.getPixelForValue(MONTH_MID_DAY[m]);
+                        if (x >= chartArea.left && x <= chartArea.right) {
+                            ctx.fillText(MONTHS_RU[m], x, y);
+                        }
+                    }
+                    ctx.restore();
+                }
+            };
 
             chart = new Chart(ctx, {
                 type: 'line',
-                plugins: [compareMonthLabelsPlugin],
+                plugins: [monthLabelsPlugin],
                 data: { datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: { duration: 500, easing: 'easeOutQuart' },
                     interaction: { mode: 'nearest', intersect: false },
-                    layout: { padding: { top: padTop, bottom: padBottom, left: padLeft, right: padRight } },
+                    layout: { padding: { top: padTop, bottom: padBottom, left: 12, right: 12 } },
                     plugins: {
                         legend: {
                             display: true,
@@ -933,7 +886,8 @@
                                 font: { size: 11 },
                                 boxWidth: 12,
                                 boxHeight: 12,
-                                padding: 8
+                                padding: 8,
+                                usePointStyle: true
                             }
                         },
                         tooltip: {
@@ -946,7 +900,7 @@
                                 title: function(items) {
                                     if (!items.length) return '';
                                     const dayOfYear = items[0].parsed.x;
-                                    const d = new Date(2024, 0, dayOfYear); // 2024 — високосный, подходит для 1..366
+                                    const d = new Date(2024, 0, dayOfYear);
                                     return d.getDate() + ' ' + MONTHS_RU_FULL[d.getMonth()].toLowerCase();
                                 },
                                 label: function(context) {
@@ -972,12 +926,12 @@
                                 font: { size: 10 },
                                 padding: 4
                             },
-                            afterFit(scale) { scale.width += Y_AXIS_SHIFT; }
+                            afterFit(scale) { scale.width += 8; }
                         },
                         x: {
                             type: 'linear',
                             min: 1,
-                            max: 366,
+                            max: 365,
                             title: { display: false },
                             grid: { display: false },
                             ticks: { display: false }
@@ -990,22 +944,13 @@
             window.weightChartInstance = chart;
         }
 
-        // ============================================================
-        //  Перерисовка
-        // ============================================================
         function redraw() {
             const filtered = filterByPeriod(ALL_ENTRIES, CURRENT_PERIOD);
             updateStats(filtered);
-            if (COMPARE_MODE) {
-                createCompareChart(filtered);
-            } else {
-                createNormalChart(filtered);
-            }
+            if (COMPARE_MODE) createCompareChart(filtered);
+            else createNormalChart(filtered);
         }
 
-        // ============================================================
-        //  Загрузка данных
-        // ============================================================
         async function loadData() {
             const loadingEl = document.getElementById('loading');
             const errorEl = document.getElementById('error');
@@ -1018,10 +963,7 @@
                 const rows = parseCSV(csvText).map(r => r.map(c => c.trim()));
                 if (rows.length < 2) throw new Error('В таблице недостаточно данных.');
 
-                let headerRowIndex = 0;
-                let dateIndex = -1;
-                let weightIndex = -1;
-
+                let headerRowIndex = 0, dateIndex = -1, weightIndex = -1;
                 for (let i = 0; i < Math.min(5, rows.length); i++) {
                     const headers = rows[i].map(h => h.toLowerCase());
                     const d = headers.findIndex(h => h.includes('дата') || h.includes('date'));
@@ -1029,16 +971,9 @@
                         h.includes('масса') || h.includes('вес') ||
                         h.includes('weight') || h.includes('mass')
                     );
-                    if (d !== -1 && w !== -1) {
-                        headerRowIndex = i;
-                        dateIndex = d;
-                        weightIndex = w;
-                        break;
-                    }
+                    if (d !== -1 && w !== -1) { headerRowIndex = i; dateIndex = d; weightIndex = w; break; }
                 }
-                if (dateIndex === -1 || weightIndex === -1) {
-                    dateIndex = 0; weightIndex = 1; headerRowIndex = 0;
-                }
+                if (dateIndex === -1 || weightIndex === -1) { dateIndex = 0; weightIndex = 1; headerRowIndex = 0; }
 
                 const entries = [];
                 for (let i = headerRowIndex + 1; i < rows.length; i++) {
@@ -1048,17 +983,14 @@
                     const weightStr = row[weightIndex];
                     if (!dateStr) continue;
 
-                    let date = null;
-                    let match;
-                    if ((match = dateStr.match(/^(\d{1,2})[./](\d{1,2})[./](\d{2})$/))) {
+                    let date = null, match;
+                    if ((match = dateStr.match(/^(\d{1,2})[./](\d{1,2})[./](\d{2})$/)))
                         date = new Date(2000 + parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
-                    } else if ((match = dateStr.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/))) {
+                    else if ((match = dateStr.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/)))
                         date = new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
-                    } else if ((match = dateStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))) {
+                    else if ((match = dateStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)))
                         date = new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
-                    } else {
-                        date = new Date(dateStr);
-                    }
+                    else date = new Date(dateStr);
                     if (!date || isNaN(date.getTime())) continue;
                     date.setHours(0, 0, 0, 0);
 
@@ -1074,13 +1006,11 @@
                 }
 
                 if (entries.length === 0) throw new Error('Не удалось извлечь корректные данные.');
-
                 entries.sort((a, b) => a.date - b.date);
                 ALL_ENTRIES = entries;
 
                 loadingEl.style.display = 'none';
                 dashboardEl.style.display = 'flex';
-
                 redraw();
 
             } catch (error) {
@@ -1091,9 +1021,6 @@
             }
         }
 
-        // ============================================================
-        //  Обработчики кнопок
-        // ============================================================
         function setupPeriodButtons() {
             document.querySelectorAll('.period-btn[data-period]').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -1105,7 +1032,6 @@
                     redraw();
                 });
             });
-
             document.getElementById('compareBtn').addEventListener('click', () => {
                 COMPARE_MODE = !COMPARE_MODE;
                 document.getElementById('compareBtn').classList.toggle('active', COMPARE_MODE);
@@ -1113,9 +1039,7 @@
             });
         }
 
-        window.addEventListener('resize', () => {
-            if (chart) chart.resize();
-        });
+        window.addEventListener('resize', () => { if (chart) chart.resize(); });
 
         window.onload = () => {
             setupPeriodButtons();
