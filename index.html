@@ -101,7 +101,6 @@
             white-space: nowrap;
             line-height: 1.1;
         }
-        /* Стрелки: высота уменьшена, ширина сохранена (scaleX = 1) */
         .trend-arrow {
             display: inline-block;
             font-size: 22px;
@@ -261,11 +260,11 @@
             </div>
 
             <div class="period-bar" id="periodBar">
-                <button class="period-btn" data-period="1m">1 месяц</button>
-                <button class="period-btn" data-period="3m">3 месяца</button>
-                <button class="period-btn" data-period="6m">6 месяцев</button>
-                <button class="period-btn" data-period="1y">1 год</button>
                 <button class="period-btn active" data-period="all">Всё время</button>
+                <button class="period-btn" data-period="1y">1 год</button>
+                <button class="period-btn" data-period="6m">6 месяцев</button>
+                <button class="period-btn" data-period="3m">3 месяца</button>
+                <button class="period-btn" data-period="1m">1 месяц</button>
                 <button class="period-btn compare" id="compareBtn">Сравнение по годам</button>
             </div>
 
@@ -1142,6 +1141,14 @@
             document.getElementById('compareBtn').addEventListener('click', () => {
                 COMPARE_MODE = !COMPARE_MODE;
                 document.getElementById('compareBtn').classList.toggle('active', COMPARE_MODE);
+                if (COMPARE_MODE) {
+                    // Режим сравнения всегда работает по всему периоду —
+                    // подсвечиваем «Всё время»
+                    document.querySelectorAll('.period-btn[data-period]').forEach(b => {
+                        b.classList.toggle('active', b.dataset.period === 'all');
+                    });
+                    CURRENT_PERIOD = 'all';
+                }
                 redraw();
             });
         }
