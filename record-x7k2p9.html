@@ -34,11 +34,10 @@
             min-height: 0;
             min-width: 0;
         }
-        /* 6 колонок: 5 плашек по 1fr + кнопка 2fr = 7fr.
-           Кнопка больше не переносится на новую строку. */
+        /* 6 равных колонок: кнопка и плашки одинаковой ширины */
         .stats {
             display: grid;
-            grid-template-columns: repeat(5, 1fr) 2fr;
+            grid-template-columns: repeat(6, 1fr);
             gap: 8px;
             margin: 0 0 10px;
             flex-shrink: 0;
@@ -104,9 +103,7 @@
         }
 
         /* ============ КНОПКА ЗАПИСИ ============ */
-        /* Высота всегда равна высоте плашек (align-self: stretch).
-           Ширина — размер ячейки (2fr в сетке).
-           Никакого aspect-ratio, никакого переноса. */
+        /* Видима по умолчанию — никаких opacity: 0 */
         .voice-btn {
             background: #e74c3c;
             border-radius: 10px;
@@ -119,14 +116,14 @@
             box-shadow: 0 3px 10px rgba(231, 76, 60, 0.35);
             color: #fff;
             text-align: center;
-            opacity: 0;
-            animation: fadeInUp 0.5s 0.30s forwards;
             height: 100%;
             width: 100%;
             min-width: 0;
-            padding: 0 8px;
+            padding: 0 6px;
             overflow: hidden;
             position: relative;
+            /* Плавное появление без исчезновения */
+            opacity: 1;
         }
         .voice-btn:hover {
             transform: translateY(-2px);
@@ -139,22 +136,23 @@
             font-size: 30px;
             line-height: 1;
         }
-        /* Состояние "слушаю" — тёмно-красная кнопка, пульсирует */
-        .voice-btn.listening {
-            background: #c0392b;
-            animation: voicePulse 1.2s infinite;
-        }
-        /* Состояние "слушаю" — показываем текст вместо иконки */
-        .voice-btn.listening .icon {
-            display: none;
-        }
         .voice-btn .listening-text {
             display: none;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 700;
             color: #fff;
             text-align: center;
             line-height: 1.1;
+        }
+        /* Состояние "слушаю" — тёмно-красная, пульсирует, показывает «Говорите» */
+        /* opacity: 1 явно, чтобы анимация voicePulse не сбрасывала видимость */
+        .voice-btn.listening {
+            background: #c0392b;
+            opacity: 1;
+            animation: voicePulse 1.2s infinite;
+        }
+        .voice-btn.listening .icon {
+            display: none;
         }
         .voice-btn.listening .listening-text {
             display: block;
@@ -162,6 +160,8 @@
         /* Состояние "показываю результат" — зелёная */
         .voice-btn.showing {
             background: #27ae60;
+            opacity: 1;
+            animation: none;
         }
         .voice-btn.showing .icon {
             display: none;
@@ -171,7 +171,7 @@
         }
         .voice-btn .result {
             display: none;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
             line-height: 1.1;
             white-space: normal;
@@ -306,7 +306,7 @@
         }
         @media (max-width: 900px) {
             .stats {
-                grid-template-columns: repeat(5, 1fr) 2fr;
+                grid-template-columns: repeat(6, 1fr);
                 gap: 7px;
                 margin-bottom: 8px;
             }
@@ -320,7 +320,7 @@
             body { padding: 6px; }
             .container { padding: 8px; border-radius: 12px; }
             .stats {
-                grid-template-columns: repeat(5, 1fr) 2fr;
+                grid-template-columns: repeat(6, 1fr);
                 gap: 5px;
                 margin-bottom: 6px;
             }
@@ -345,7 +345,7 @@
         }
         @media (max-width: 900px) and (orientation: landscape) {
             .stats {
-                grid-template-columns: repeat(5, 1fr) 2fr;
+                grid-template-columns: repeat(6, 1fr);
                 gap: 5px;
                 margin-bottom: 6px;
             }
@@ -1205,7 +1205,18 @@
 
             recognition.onerror = (event) => {
                 voiceBtn.classList.remove('listening');
-                showStatus('Ошибка распознавания: ' + event.error, true);
+                // Понятные сообщения для частых ошибок
+                let msg = 'Ошибка распознавания: ' + event.error;
+                if (event.error === 'network') {
+                    msg = 'Нет доступа к серверам распознавания. Проверьте интернет и VPN.';
+                } else if (event.error === 'not-allowed') {
+                    msg = 'Разрешите доступ к микрофону в настройках браузера.';
+                } else if (event.error === 'no-speech') {
+                    msg = 'Не услышал речь. Попробуйте ещё раз.';
+                } else if (event.error === 'audio-capture') {
+                    msg = 'Микрофон не найден.';
+                }
+                showStatus(msg, true);
             };
             recognition.onend = () => { voiceBtn.classList.remove('listening'); };
             recognition.start();
