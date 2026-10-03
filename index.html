@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Динамика массы тела</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0a1018">
@@ -85,9 +85,6 @@
             white-space: nowrap;
             line-height: 1.1;
         }
-        .stat-item p.positive { color: #e74c3c; }
-        .stat-item p.negative { color: #27ae60; }
-        .stat-item p.neutral  { color: #4db8ff; }
         #totalChange,
         #swingValue {
             color: #ffffff !important;
@@ -162,7 +159,8 @@
             padding: 6px;
             min-width: 0;
             overflow: hidden;
-            touch-action: pan-y; /* разрешаем вертикальный скролл, горизонталь ловим сами */
+            /* Отключает double-tap-zoom на тач-устройствах, но оставляет обычные тапы и вертикальный скролл */
+            touch-action: manipulation;
         }
         #loading, #error {
             text-align: center;
@@ -188,8 +186,10 @@
         }
 
         /* === Полноэкранный режим диаграммы === */
+        html.chart-fullscreen,
         body.chart-fullscreen {
-            padding: 0;
+            padding: 0 !important;
+            overflow: hidden !important;
         }
         body.chart-fullscreen .container {
             padding: 0;
@@ -198,8 +198,13 @@
             box-shadow: none;
         }
         body.chart-fullscreen .stats,
-        body.chart-fullscreen .period-bar {
+        body.chart-fullscreen .period-bar,
+        body.chart-fullscreen #loading,
+        body.chart-fullscreen #error {
             display: none !important;
+        }
+        body.chart-fullscreen #dashboard {
+            display: flex !important;
         }
         body.chart-fullscreen .chart-container {
             border-radius: 0;
@@ -667,7 +672,6 @@
             }
         };
 
-        // Плагин легенды диапазонов (работает на всех периодах обычной диаграммы)
         const weightLegendPlugin = {
             id: 'weightLegend',
             afterDraw(chart) {
@@ -693,7 +697,7 @@
                 if (hasAbove) items.push({ label: '76+', color: RANGE_COLORS[76] });
                 if (items.length === 0) return;
 
-                const top = Math.max(2, chartArea.top - 22);
+                const top = Math.max(2, chartArea.top - 18);
                 const isSmall = (chartArea.right - chartArea.left) < 480;
                 const fontPx = isSmall ? 9 : 11;
                 const boxSize = isSmall ? 8 : 10;
@@ -917,10 +921,9 @@
 
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
-            const padTopBase = isLandscapePhone ? 26 : (isSmall ? 28 : 32);
-            // Легенда диапазонов теперь показывается на всех периодах обычной диаграммы,
-            // поэтому верхний отступ увеличен всегда.
-            const padTop = padTopBase + 22;
+            // Уменьшенный верхний отступ
+            const padTopBase = isLandscapePhone ? 16 : (isSmall ? 18 : 20);
+            const padTop = padTopBase + 18;  // запас под легенду
             const padBottom = getPadBottom();
 
             const showMonthGrid = (CURRENT_PERIOD === '6m' || CURRENT_PERIOD === '1y' ||
@@ -1011,7 +1014,6 @@
             chart._yearSegments = yearSegments;
             chart._monthSegments = monthSegments;
             chart._vAxisIndex = vAxisIndex;
-            // Легенда диапазонов — на всех периодах обычной диаграммы
             chart._showWeightLegend = true;
             chart._legendWeights = entries.map(e => e.weight);
 
@@ -1044,7 +1046,7 @@
 
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
-            const padTop = isLandscapePhone ? 26 : (isSmall ? 28 : 32);
+            const padTop = isLandscapePhone ? 16 : (isSmall ? 18 : 20);
             const padBottom = getPadBottom();
 
             const MONTH_MID_DAY = [15, 45, 74, 105, 135, 166, 196, 227, 258, 288, 319, 349];
@@ -1323,27 +1325,22 @@
 
         // === Полноэкранный режим по двойному тапу / двойному клику ===
         let chartFullscreen = false;
+        let lastTouchTime = 0;   // для подавления эмулированного dblclick после touch
 
         function enterFullscreen() {
             if (chartFullscreen) return;
             chartFullscreen = true;
+            document.documentElement.classList.add('chart-fullscreen');
             document.body.classList.add('chart-fullscreen');
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    if (chart) chart.resize();
-                });
-            });
+            if (chart) chart.resize();
         }
 
         function exitFullscreen() {
             if (!chartFullscreen) return;
             chartFullscreen = false;
+            document.documentElement.classList.remove('chart-fullscreen');
             document.body.classList.remove('chart-fullscreen');
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    if (chart) chart.resize();
-                });
-            });
+            if (chart) chart.resize();
         }
 
         function toggleFullscreen() {
@@ -1388,9 +1385,13 @@
                 const dx = t.clientX - lastTapX;
                 const dy = t.clientY - lastTapY;
 
+                lastTouchTime = now;
+
                 if (now - lastTapTime < DBL_TAP_MS &&
                     Math.abs(dx) < DBL_TAP_DIST &&
                     Math.abs(dy) < DBL_TAP_DIST) {
+                    // Это двойной тап — блокируем возможный синтетический click/dblclick
+                    e.preventDefault();
                     toggleFullscreen();
                     lastTapTime = 0;
                 } else {
@@ -1398,9 +1399,11 @@
                     lastTapX = t.clientX;
                     lastTapY = t.clientY;
                 }
-            }, { passive: true });
+            }, { passive: false });
 
+            // Mouse dblclick — но игнорируем, если недавно был touch (иначе получим двойной toggle)
             container.addEventListener('dblclick', (e) => {
+                if (Date.now() - lastTouchTime < 500) return;
                 e.preventDefault();
                 toggleFullscreen();
             });
