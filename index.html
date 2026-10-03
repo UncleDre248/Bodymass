@@ -21,15 +21,15 @@
             background-color: #0f1720;
             color: #e8eef5;
             display: flex;
-            padding: 12px;
+            padding: 6px;
         }
         .container {
             flex: 1;
             display: flex;
             flex-direction: column;
             background: #1a2332;
-            padding: 12px;
-            border-radius: 16px;
+            padding: 8px;
+            border-radius: 12px;
             box-shadow: 0 4px 18px rgba(0,0,0,0.5);
             min-height: 0;
             min-width: 0;
@@ -38,15 +38,15 @@
         .stats {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-            margin: 0 0 8px;
+            gap: 6px;
+            margin: 0 0 4px;
             flex-shrink: 0;
             align-items: stretch;
         }
         .stat-item {
             background: linear-gradient(135deg, #1e2a3a 0%, #243447 100%);
-            padding: 8px 6px;
-            border-radius: 10px;
+            padding: 5px 5px;
+            border-radius: 8px;
             text-align: center;
             transition: transform 0.25s, box-shadow 0.25s;
             opacity: 0;
@@ -67,11 +67,11 @@
             box-shadow: 0 6px 16px rgba(0,0,0,0.35);
         }
         .stat-item h3 {
-            margin: 0 0 3px;
-            font-size: 9px;
+            margin: 0 0 2px;
+            font-size: 8px;
             color: #8aa0b4;
             text-transform: uppercase;
-            letter-spacing: 0.6px;
+            letter-spacing: 0.5px;
             font-weight: 600;
             white-space: nowrap;
             overflow: hidden;
@@ -79,11 +79,11 @@
         }
         .stat-item p {
             margin: 0;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
             color: #4db8ff;
             white-space: nowrap;
-            line-height: 1.1;
+            line-height: 1.05;
         }
         #totalChange,
         #swingValue {
@@ -91,18 +91,18 @@
         }
         .stat-item p small {
             display: block;
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 500;
             color: #8aa0b4;
-            margin-top: 2px;
+            margin-top: 1px;
             white-space: nowrap;
-            line-height: 1.1;
+            line-height: 1.05;
         }
         .trend-arrow {
             display: inline-block;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 900;
-            margin-left: 4px;
+            margin-left: 3px;
             vertical-align: middle;
             line-height: 1;
             transform: scaleY(0.65) scaleX(1);
@@ -114,8 +114,8 @@
 
         .period-bar {
             display: flex;
-            gap: 6px;
-            margin: 0 0 8px;
+            gap: 5px;
+            margin: 0 0 4px;
             flex-shrink: 0;
             align-items: stretch;
         }
@@ -123,9 +123,9 @@
             background: #0a1018;
             color: #c8d8e8;
             border: 1px solid #2c3a4f;
-            padding: 6px 8px;
-            border-radius: 8px;
-            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
             font-weight: 600;
             cursor: pointer;
             transition: background 0.15s, color 0.15s, border-color 0.15s;
@@ -155,11 +155,10 @@
             flex: 1 1 auto;
             min-height: 200px;
             background-color: #0a1018;
-            border-radius: 12px;
-            padding: 6px;
+            border-radius: 10px;
+            padding: 4px;
             min-width: 0;
             overflow: hidden;
-            /* Отключает double-tap-zoom на тач-устройствах, но оставляет обычные тапы и вертикальный скролл */
             touch-action: manipulation;
         }
         #loading, #error {
@@ -233,46 +232,50 @@
         }
 
         @media (max-width: 1100px) {
-            .stat-item p { font-size: 15px; }
-            .trend-arrow { font-size: 20px; }
+            .stat-item p { font-size: 14px; }
+            .trend-arrow { font-size: 18px; }
         }
         @media (max-width: 900px) {
-            .stats { grid-template-columns: repeat(5, 1fr); gap: 7px; margin-bottom: 6px; }
-            .stat-item p { font-size: 14px; }
-            .stat-item h3 { font-size: 8px; }
-            .stat-item p small { font-size: 8px; }
-            .trend-arrow { font-size: 18px; }
-            .period-btn { width: 75px; flex: 0 0 75px; font-size: 11px; padding: 5px 6px; }
-            .period-btn.compare { min-width: 120px; font-size: 11px; }
+            .stats { gap: 5px; margin-bottom: 3px; }
+            .stat-item { padding: 5px 4px; }
+            .stat-item p { font-size: 13px; }
+            .stat-item h3 { font-size: 7px; }
+            .stat-item p small { font-size: 7px; }
+            .trend-arrow { font-size: 16px; }
+            .period-btn { width: 75px; flex: 0 0 75px; font-size: 10px; padding: 4px 6px; }
+            .period-btn.compare { min-width: 120px; font-size: 10px; }
+            .period-bar { gap: 4px; margin-bottom: 3px; }
         }
         @media (max-width: 600px) {
-            body { padding: 6px; }
-            .container { padding: 8px; border-radius: 12px; }
-            .stats { grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 6px; }
-            .stat-item { padding: 6px 3px; border-radius: 8px; }
-            .stat-item h3 { font-size: 7px; letter-spacing: 0.3px; margin-bottom: 2px; }
+            body { padding: 4px; }
+            .container { padding: 6px; border-radius: 10px; }
+            .stats { gap: 4px; margin-bottom: 3px; }
+            .stat-item { padding: 4px 3px; border-radius: 6px; }
+            .stat-item h3 { font-size: 7px; letter-spacing: 0.2px; margin-bottom: 1px; }
             .stat-item p { font-size: 12px; }
             .stat-item p small { font-size: 7px; }
-            .trend-arrow { font-size: 16px; margin-left: 2px; }
-            .period-bar { gap: 3px; margin-bottom: 5px; }
-            .period-btn { width: 62px; flex: 0 0 62px; font-size: 10px; padding: 4px 5px; border-radius: 6px; }
-            .period-btn.compare { min-width: 100px; font-size: 10px; }
-            .chart-container { padding: 4px; }
+            .trend-arrow { font-size: 14px; margin-left: 2px; }
+            .period-bar { gap: 3px; margin-bottom: 3px; }
+            .period-btn { width: 60px; flex: 0 0 60px; font-size: 9px; padding: 4px 4px; border-radius: 5px; }
+            .period-btn.compare { min-width: 95px; font-size: 9px; }
+            .chart-container { padding: 3px; border-radius: 8px; }
         }
         @media (max-width: 420px) {
             .stat-item h3 { display: none; }
-            .period-btn { width: 54px; flex: 0 0 54px; font-size: 9px; padding: 4px 4px; }
-            .period-btn.compare { min-width: 90px; font-size: 9px; }
-            .trend-arrow { font-size: 14px; }
+            .stat-item { padding: 4px 2px; }
+            .period-btn { width: 52px; flex: 0 0 52px; font-size: 9px; padding: 3px 3px; }
+            .period-btn.compare { min-width: 85px; font-size: 9px; }
+            .trend-arrow { font-size: 13px; }
         }
         @media (max-width: 900px) and (orientation: landscape) {
-            .stats { grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 4px; }
-            .stat-item { padding: 5px 3px; }
+            .stats { gap: 4px; margin-bottom: 3px; }
+            .stat-item { padding: 4px 3px; }
             .stat-item h3 { font-size: 7px; margin-bottom: 1px; }
-            .stat-item p { font-size: 12px; }
+            .stat-item p { font-size: 11px; }
             .stat-item p small { font-size: 7px; }
-            .period-btn { width: 75px; flex: 0 0 75px; font-size: 10px; padding: 4px 6px; }
+            .period-btn { width: 75px; flex: 0 0 75px; font-size: 10px; padding: 3px 6px; }
             .period-btn.compare { min-width: 120px; font-size: 10px; }
+            .period-bar { gap: 4px; margin-bottom: 3px; }
         }
     </style>
 </head>
@@ -441,12 +444,13 @@
             return { barPercentage: 1.0, categoryPercentage: 1.0 };
         }
 
+        // Уменьшенные нижние отступы — больше места под сам график
         function getPadBottom() {
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
-            if (isLandscapePhone) return 60;
-            if (isSmall) return 65;
-            return 70;
+            if (isLandscapePhone) return 44;
+            if (isSmall) return 48;
+            return 52;
         }
 
         const yAxisLinePlugin = {
@@ -619,7 +623,7 @@
                 const chartWidth = chartArea.right - chartArea.left;
                 const isSmall = chartWidth < 400;
                 const fontPx = isSmall ? 8 : 10;
-                const offset = isSmall ? 6 : 8;
+                const offset = isSmall ? 5 : 7;
                 ctx.save();
                 ctx.font = `bold ${fontPx}px Inter, sans-serif`;
                 ctx.fillStyle = 'rgba(200, 216, 232, 0.75)';
@@ -653,7 +657,7 @@
                 const chartWidth = chartArea.right - chartArea.left;
                 const isSmall = chartWidth < 400;
                 const fontPx = isSmall ? 9 : 11;
-                const offset = isSmall ? 38 : 42;
+                const offset = isSmall ? 30 : 34;
                 ctx.save();
                 ctx.font = `bold ${fontPx}px Inter, sans-serif`;
                 ctx.fillStyle = 'rgba(200, 216, 232, 0.55)';
@@ -697,11 +701,11 @@
                 if (hasAbove) items.push({ label: '76+', color: RANGE_COLORS[76] });
                 if (items.length === 0) return;
 
-                const top = Math.max(2, chartArea.top - 18);
+                const top = Math.max(2, chartArea.top - 14);
                 const isSmall = (chartArea.right - chartArea.left) < 480;
-                const fontPx = isSmall ? 9 : 11;
-                const boxSize = isSmall ? 8 : 10;
-                const itemGap = isSmall ? 8 : 12;
+                const fontPx = isSmall ? 9 : 10;
+                const boxSize = isSmall ? 8 : 9;
+                const itemGap = isSmall ? 7 : 10;
 
                 ctx.save();
                 ctx.font = `600 ${fontPx}px Inter, sans-serif`;
@@ -921,9 +925,9 @@
 
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
-            // Уменьшенный верхний отступ
-            const padTopBase = isLandscapePhone ? 16 : (isSmall ? 18 : 20);
-            const padTop = padTopBase + 18;  // запас под легенду
+            // Минимальный верхний отступ + небольшой запас под легенду
+            const padTopBase = isLandscapePhone ? 8 : (isSmall ? 10 : 12);
+            const padTop = padTopBase + 14;
             const padBottom = getPadBottom();
 
             const showMonthGrid = (CURRENT_PERIOD === '6m' || CURRENT_PERIOD === '1y' ||
@@ -962,7 +966,7 @@
                     maintainAspectRatio: false,
                     animation: { duration: 500, easing: 'easeOutQuart' },
                     interaction: { mode: 'index', intersect: false },
-                    layout: { padding: { top: padTop, bottom: padBottom, left: 12, right: 12 } },
+                    layout: { padding: { top: padTop, bottom: padBottom, left: 10, right: 10 } },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
@@ -988,7 +992,7 @@
                                 text: 'Масса тела (кг)',
                                 color: '#c8d8e8',
                                 font: { size: 10 },
-                                padding: { top: 0, bottom: 4 }
+                                padding: { top: 0, bottom: 2 }
                             },
                             grid: { color: 'rgba(255,255,255,0.10)' },
                             ticks: {
@@ -997,7 +1001,7 @@
                                 font: { size: 10 },
                                 padding: 4
                             },
-                            afterFit(scale) { scale.width += 8; }
+                            afterFit(scale) { scale.width += 6; }
                         },
                         x: {
                             title: { display: false },
@@ -1046,7 +1050,7 @@
 
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
-            const padTop = isLandscapePhone ? 16 : (isSmall ? 18 : 20);
+            const padTop = isLandscapePhone ? 8 : (isSmall ? 10 : 12);
             const padBottom = getPadBottom();
 
             const MONTH_MID_DAY = [15, 45, 74, 105, 135, 166, 196, 227, 258, 288, 319, 349];
@@ -1065,7 +1069,7 @@
                         const x = xScale.getPixelForValue(MONTH_MID_DAY[m]);
                         if (x >= chartArea.left && x <= chartArea.right) {
                             ctx.save();
-                            ctx.translate(x, chartArea.bottom + 6);
+                            ctx.translate(x, chartArea.bottom + 5);
                             ctx.rotate(-Math.PI / 2);
                             ctx.textAlign = 'right';
                             ctx.textBaseline = 'middle';
@@ -1086,7 +1090,7 @@
                     maintainAspectRatio: false,
                     animation: { duration: 500, easing: 'easeOutQuart' },
                     interaction: { mode: 'nearest', intersect: false },
-                    layout: { padding: { top: padTop, bottom: padBottom, left: 12, right: 12 } },
+                    layout: { padding: { top: padTop, bottom: padBottom, left: 10, right: 10 } },
                     plugins: {
                         legend: {
                             display: true,
@@ -1096,7 +1100,7 @@
                                 font: { size: 10 },
                                 boxWidth: 10,
                                 boxHeight: 10,
-                                padding: 12,
+                                padding: 10,
                                 usePointStyle: true,
                                 pointStyle: 'circle'
                             }
@@ -1128,7 +1132,7 @@
                                 text: 'Масса тела (кг)',
                                 color: '#c8d8e8',
                                 font: { size: 10 },
-                                padding: { top: 0, bottom: 4 }
+                                padding: { top: 0, bottom: 2 }
                             },
                             grid: { color: 'rgba(255,255,255,0.10)' },
                             ticks: {
@@ -1137,7 +1141,7 @@
                                 font: { size: 10 },
                                 padding: 4
                             },
-                            afterFit(scale) { scale.width += 8; }
+                            afterFit(scale) { scale.width += 6; }
                         },
                         x: {
                             type: 'linear',
@@ -1273,7 +1277,6 @@
             });
         }
 
-        // === Свайпы по области графика ===
         function setupSwipe() {
             const container = document.getElementById('chartContainer');
             if (!container) return;
@@ -1323,9 +1326,8 @@
             container.addEventListener('touchcancel', () => { tracking = false; }, { passive: true });
         }
 
-        // === Полноэкранный режим по двойному тапу / двойному клику ===
         let chartFullscreen = false;
-        let lastTouchTime = 0;   // для подавления эмулированного dblclick после touch
+        let lastTouchTime = 0;
 
         function enterFullscreen() {
             if (chartFullscreen) return;
@@ -1390,7 +1392,6 @@
                 if (now - lastTapTime < DBL_TAP_MS &&
                     Math.abs(dx) < DBL_TAP_DIST &&
                     Math.abs(dy) < DBL_TAP_DIST) {
-                    // Это двойной тап — блокируем возможный синтетический click/dblclick
                     e.preventDefault();
                     toggleFullscreen();
                     lastTapTime = 0;
@@ -1401,7 +1402,6 @@
                 }
             }, { passive: false });
 
-            // Mouse dblclick — но игнорируем, если недавно был touch (иначе получим двойной toggle)
             container.addEventListener('dblclick', (e) => {
                 if (Date.now() - lastTouchTime < 500) return;
                 e.preventDefault();
