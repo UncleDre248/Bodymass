@@ -36,14 +36,14 @@
         }
         .stats {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
             margin: 0 0 10px;
             flex-shrink: 0;
         }
         .stat-item {
             background: linear-gradient(135deg, #1e2a3a 0%, #243447 100%);
-            padding: 7px 8px;
+            padding: 7px 6px;
             border-radius: 10px;
             text-align: center;
             transition: transform 0.25s, box-shadow 0.25s;
@@ -56,16 +56,17 @@
         .stat-item:nth-child(3) { animation-delay: 0.15s; }
         .stat-item:nth-child(4) { animation-delay: 0.20s; }
         .stat-item:nth-child(5) { animation-delay: 0.25s; }
+        .stat-item:nth-child(6) { animation-delay: 0.30s; }
         .stat-item:hover {
             transform: translateY(-3px);
             box-shadow: 0 6px 16px rgba(0,0,0,0.35);
         }
         .stat-item h3 {
             margin: 0 0 4px;
-            font-size: 10px;
+            font-size: 9px;
             color: #8aa0b4;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.8px;
             font-weight: 600;
             white-space: nowrap;
             overflow: hidden;
@@ -73,7 +74,7 @@
         }
         .stat-item p {
             margin: 0;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
             color: #4db8ff;
             white-space: nowrap;
@@ -87,12 +88,79 @@
         }
         .stat-item p small {
             display: block;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 500;
             color: #8aa0b4;
             margin-top: 2px;
             white-space: nowrap;
         }
+
+        /* ============ КНОПКА ЗАПИСИ (в ряду с плашками) ============ */
+        .voice-btn {
+            background: #e74c3c;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.35);
+            padding: 7px 6px;
+            min-width: 0;
+            color: #fff;
+            text-align: center;
+            opacity: 0;
+            animation: fadeInUp 0.5s 0.30s forwards;
+        }
+        .voice-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(231, 76, 60, 0.5);
+        }
+        .voice-btn:active {
+            transform: scale(0.96);
+        }
+        .voice-btn .icon {
+            font-size: 22px;
+            line-height: 1;
+        }
+        .voice-btn .label {
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-top: 4px;
+            opacity: 0.9;
+        }
+        .voice-btn.listening {
+            background: #c0392b;
+            animation: voicePulse 1.2s infinite;
+        }
+        .voice-btn.showing {
+            background: #27ae60;
+        }
+        .voice-btn .result {
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-top: 2px;
+            white-space: normal;
+            word-break: break-word;
+        }
+        .voice-btn .result small {
+            display: block;
+            font-size: 9px;
+            font-weight: 500;
+            margin-top: 2px;
+            opacity: 0.85;
+        }
+        @keyframes voicePulse {
+            0%   { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
+            70%  { box-shadow: 0 0 0 14px rgba(231, 76, 60, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+        }
+
         .chart-container {
             position: relative;
             width: 100%;
@@ -182,55 +250,27 @@
             min-height: 18px;
         }
 
-        /* ============ КНОПКА ГОЛОСОВОГО ВВОДА ============ */
-        #voiceFab {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            background: #4db8ff;
-            color: #001236;
-            font-size: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 4px 16px rgba(77, 184, 255, 0.4);
-            z-index: 1000;
-            user-select: none;
-            transition: transform 0.2s, background 0.2s;
-        }
-        #voiceFab:active { transform: scale(0.95); }
-        #voiceFab.listening {
-            background: #e74c3c;
-            color: #fff;
-            animation: pulse 1.2s infinite;
-        }
-        @keyframes pulse {
-            0%   { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.6); }
-            70%  { box-shadow: 0 0 0 20px rgba(231, 76, 60, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
-        }
+        /* ============ ТОСТ-СТАТУС ============ */
         #voiceStatus {
             position: fixed;
-            bottom: 100px;
-            right: 24px;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
             background: rgba(44, 62, 80, 0.97);
             color: #e8eef5;
-            padding: 10px 16px;
-            border-radius: 8px;
+            padding: 10px 18px;
+            border-radius: 10px;
             font-size: 14px;
             display: none;
             z-index: 1000;
-            max-width: 280px;
+            max-width: 90vw;
             box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            text-align: center;
         }
 
         /* ============ АДАПТИВ ============ */
         @media (max-width: 1100px) {
-            .stat-item p { font-size: 17px; }
+            .stat-item p { font-size: 15px; }
         }
         @media (max-width: 900px) {
             .stats {
@@ -238,38 +278,45 @@
                 gap: 8px;
                 margin-bottom: 8px;
             }
-            .stat-item p { font-size: 17px; }
+            .stat-item p { font-size: 15px; }
+            .voice-btn .icon { font-size: 20px; }
         }
         @media (max-width: 600px) {
             body { padding: 6px; }
             .container { padding: 8px; border-radius: 12px; }
             .stats {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(3, 1fr);
                 gap: 6px;
                 margin-bottom: 6px;
             }
-            .stat-item { padding: 6px 6px; border-radius: 8px; }
+            .stat-item { padding: 6px 4px; border-radius: 8px; }
             .stat-item h3 {
-                font-size: 9px;
-                letter-spacing: 0.5px;
+                font-size: 8px;
+                letter-spacing: 0.4px;
                 margin-bottom: 3px;
             }
-            .stat-item p { font-size: 15px; }
-            .stat-item p small { font-size: 9px; }
+            .stat-item p { font-size: 13px; }
+            .stat-item p small { font-size: 8px; }
+            .voice-btn { padding: 6px 4px; border-radius: 8px; }
+            .voice-btn .icon { font-size: 18px; }
+            .voice-btn .label { font-size: 8px; margin-top: 2px; }
+            .voice-btn .result { font-size: 11px; }
             .chart-container { padding: 4px; min-height: 200px; }
-            #voiceFab { bottom: 16px; right: 16px; width: 56px; height: 56px; font-size: 24px; }
-            #voiceStatus { bottom: 84px; right: 16px; }
         }
         @media (max-width: 900px) and (orientation: landscape) {
             .stats {
-                grid-template-columns: repeat(5, 1fr);
+                grid-template-columns: repeat(6, 1fr);
                 gap: 5px;
                 margin-bottom: 6px;
             }
             .stat-item { padding: 4px 3px; }
-            .stat-item h3 { font-size: 8px; margin-bottom: 1px; }
-            .stat-item p { font-size: 13px; }
-            .stat-item p small { font-size: 8px; }
+            .stat-item h3 { font-size: 7px; margin-bottom: 1px; }
+            .stat-item p { font-size: 12px; }
+            .stat-item p small { font-size: 7px; }
+            .voice-btn { padding: 4px 3px; }
+            .voice-btn .icon { font-size: 16px; }
+            .voice-btn .label { font-size: 7px; }
+            .voice-btn .result { font-size: 10px; }
             .chart-container { min-height: 180px; }
         }
     </style>
@@ -312,6 +359,10 @@
                     <h3>Колебание</h3>
                     <p id="swingValue">--</p>
                 </div>
+                <div class="voice-btn" id="voiceBtn" title="Сказать массу тела">
+                    <div class="icon" id="voiceIcon">🎤</div>
+                    <div class="label" id="voiceLabel">Запись</div>
+                </div>
             </div>
             <div class="chart-container" id="chartContainer">
                 <canvas id="weightChart"></canvas>
@@ -319,8 +370,6 @@
         </div>
     </div>
 
-    <!-- Кнопка голосового ввода -->
-    <div id="voiceFab" style="display:none;" title="Сказать массу тела">🎤</div>
     <div id="voiceStatus"></div>
 
     <script>
@@ -328,8 +377,8 @@
         //  НАСТРОЙКИ — ЗАМЕНИТЕ НА СВОИ ЗНАЧЕНИЯ
         // ============================================================
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/ВАШ_ID/exec';
-        const SECRET_TOKEN = 'xK9pL2mQ8vN4tR7wY3hJ5sD1fG6aZ0bC';
-        const PIN_HASH = 'd0ea2ecfa6b13d51da41b88897b957cfb92c44409d92c571dca5521e0f859a12'; // см. инструкцию ниже
+        const SECRET_TOKEN = 'ЗАМЕНИТЕ_НА_СЛУЧАЙНУЮ_СТРОКУ';
+        const PIN_HASH = 'ЗАМЕНИТЕ_НА_ХЕШ_ОТ_ВАШЕГО_PIN';
 
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRCxUQ2eWCaI8HwAvEFRVc1VzXgjun4Gkx5K6vk3x7dHyKaaq_GHatCTUMkh2vb2EYIWCtVUmnLnPiE/pub?output=csv';
 
@@ -916,7 +965,6 @@
         const pinBtn = document.getElementById('pinBtn');
         const pinError = document.getElementById('pinError');
         const mainContainer = document.getElementById('mainContainer');
-        const voiceFab = document.getElementById('voiceFab');
 
         async function tryUnlock() {
             const pin = pinInput.value.trim();
@@ -933,14 +981,12 @@
         function unlockUI() {
             pinScreen.style.display = 'none';
             mainContainer.style.display = 'flex';
-            voiceFab.style.display = 'flex';
             loadData();
         }
 
         pinBtn.addEventListener('click', tryUnlock);
         pinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryUnlock(); });
 
-        // Проверяем сохранённый PIN при загрузке
         (async function initPin() {
             const saved = localStorage.getItem('bodymass_pin');
             if (saved && await checkPin(saved)) {
@@ -951,6 +997,9 @@
         // ============================================================
         //  ГОЛОСОВОЙ ВВОД
         // ============================================================
+        const voiceBtn = document.getElementById('voiceBtn');
+        const voiceIcon = document.getElementById('voiceIcon');
+        const voiceLabel = document.getElementById('voiceLabel');
         const voiceStatus = document.getElementById('voiceStatus');
 
         const MONTHS_RU_FULL = [
@@ -973,11 +1022,11 @@
         function showStatus(text, isError) {
             voiceStatus.textContent = text;
             voiceStatus.style.display = 'block';
-            voiceStatus.style.background = isError 
-                ? 'rgba(231, 76, 60, 0.95)' 
+            voiceStatus.style.background = isError
+                ? 'rgba(231, 76, 60, 0.95)'
                 : 'rgba(44, 62, 80, 0.97)';
             clearTimeout(showStatus._t);
-            showStatus._t = setTimeout(() => { voiceStatus.style.display = 'none'; }, 5000);
+            showStatus._t = setTimeout(() => { voiceStatus.style.display = 'none'; }, 4000);
         }
 
         function fmt(d) {
@@ -1049,6 +1098,26 @@
             return { date: null, weight };
         }
 
+        // Показать распознанные данные на кнопке и подождать 2 секунды
+        function showResultOnButton(weight, date) {
+            return new Promise(resolve => {
+                voiceBtn.classList.add('showing');
+                voiceIcon.style.display = 'none';
+                voiceLabel.style.display = 'none';
+                voiceBtn.innerHTML =
+                    '<div class="result">' + weight.toFixed(1) + ' кг' +
+                    (date ? '<small>' + date + '</small>' : '<small>сегодня</small>') +
+                    '</div>';
+                setTimeout(() => {
+                    voiceBtn.innerHTML =
+                        '<div class="icon" id="voiceIcon">🎤</div>' +
+                        '<div class="label" id="voiceLabel">Запись</div>';
+                    voiceBtn.classList.remove('showing');
+                    resolve();
+                }, 2000);
+            });
+        }
+
         function startVoiceInput() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
@@ -1060,11 +1129,11 @@
             recognition.interimResults = false;
             recognition.maxAlternatives = 1;
 
-            voiceFab.classList.add('listening');
+            voiceBtn.classList.add('listening');
             showStatus('🎤 Говорите...');
 
             recognition.onresult = async (event) => {
-                voiceFab.classList.remove('listening');
+                voiceBtn.classList.remove('listening');
                 const spoken = event.results[0][0].transcript;
                 const parsed = parseSpokenInput(spoken);
 
@@ -1073,8 +1142,11 @@
                     return;
                 }
 
+                // Показываем результат на кнопке 2 секунды перед отправкой
+                await showResultOnButton(parsed.weight, parsed.date);
+
                 const dateInfo = parsed.date ? ' за ' + parsed.date : ' (сегодня)';
-                showStatus('Записываю ' + parsed.weight.toFixed(1) + ' кг' + dateInfo + '...');
+                showStatus('Отправляю ' + parsed.weight.toFixed(1) + ' кг' + dateInfo + '...');
 
                 try {
                     const body = {
@@ -1093,7 +1165,7 @@
                     if (result.status === 'ok') {
                         const mode = result.mode === 'updated' ? 'обновлено' : 'записано';
                         showStatus('✅ ' + mode + ': ' + result.weight.toFixed(1) + ' кг за ' + result.date);
-                        setTimeout(() => { if (window.weightChartInstance) loadData(); }, 2000);
+                        setTimeout(() => { if (window.weightChartInstance) loadData(); }, 1500);
                     } else {
                         showStatus('Ошибка: ' + result.message, true);
                     }
@@ -1103,14 +1175,14 @@
             };
 
             recognition.onerror = (event) => {
-                voiceFab.classList.remove('listening');
+                voiceBtn.classList.remove('listening');
                 showStatus('Ошибка распознавания: ' + event.error, true);
             };
-            recognition.onend = () => { voiceFab.classList.remove('listening'); };
+            recognition.onend = () => { voiceBtn.classList.remove('listening'); };
             recognition.start();
         }
 
-        voiceFab.addEventListener('click', startVoiceInput);
+        voiceBtn.addEventListener('click', startVoiceInput);
     </script>
 
     <!-- Регистрация Service Worker -->
