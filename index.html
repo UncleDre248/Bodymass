@@ -162,6 +162,7 @@
             padding: 6px;
             min-width: 0;
             overflow: hidden;
+            touch-action: pan-y; /* разрешаем вертикальный скролл, горизонталь ловим сами */
         }
         #loading, #error {
             text-align: center;
@@ -307,6 +308,9 @@
         // Дата, до которой дотягивается ось X у диаграмм "Всё время" и "Сравнение по годам"
         const X_MAX_DATE = new Date(2026, 11, 31);
 
+        // Порядок периодов для свайпа (слева направо: от меньшего к большему)
+        const PERIOD_ORDER = ['1m', '3m', '6m', '1y', 'all'];
+
         let ALL_ENTRIES = [];
         let CURRENT_PERIOD = 'all';
         let COMPARE_MODE = false;
@@ -382,10 +386,6 @@
             ctx.closePath();
         }
 
-        // Параметры столбцов:
-        // 1м / 3м / 6м — узкие зазоры
-        // 1г — 1px зазор (рассчитывается в createNormalChart)
-        // всё время — БЕЗ зазоров
         function getBarParams(period) {
             if (period === '1m' || period === '3m' || period === '6m') {
                 return { barPercentage: 0.85, categoryPercentage: 0.95 };
@@ -393,7 +393,6 @@
             if (period === '1y') {
                 return { barPercentage: 0.97, categoryPercentage: 1.0 };
             }
-            // "all" — без зазоров
             return { barPercentage: 1.0, categoryPercentage: 1.0 };
         }
 
@@ -628,6 +627,75 @@
             }
         };
 
+        // Плагин легенды диапазонов для диаграммы "Всё время"
+        const weightLegendPlugin = {
+            id: 'weightLegend',
+            afterDraw(chart) {
+                if (!chart._showWeightLegend) return;
+                const { ctx, chartArea, scales } = chart;
+                if (!chartArea) return;
+
+                // Собираем только реально используемые диапазоны в текущих данных,
+                // чтобы не рисовать лишние цвета.
+                const usedKeys = new Set();
+                let hasBelow = false;
+                let hasAbove = false;
+                (chart._legendWeights || []).forEach(w => {
+                    const k = Math.floor(w);
+                    if (k < 69) hasBelow = true;
+                    else if (k > 76) hasAbove = true;
+                    else usedKeys.add(k);
+                });
+
+                // Формируем список записей легенды
+                const items = [];
+                if (hasBelow) items.push({ label: '<69', color: RANGE_COLORS[69] });
+                for (let k = 69; k <= 76; k++) {
+                    if (usedKeys.has(k)) items.push({ label: String(k), color: RANGE_COLORS[k] });
+                }
+                if (hasAbove) items.push({ label: '76+', color: RANGE_COLORS[76] });
+                if (items.length === 0) return;
+
+                const top = Math.max(2, chartArea.top - 22);
+                const isSmall = (chartArea.right - chartArea.left) < 480;
+                const fontPx = isSmall ? 9 : 11;
+                const boxSize = isSmall ? 8 : 10;
+                const gap = isSmall ? 5 : 7;
+                const itemGap = isSmall ? 8 : 12;
+
+                ctx.save();
+                ctx.font = `600 ${fontPx}px Inter, sans-serif`;
+                ctx.textBaseline = 'middle';
+
+                // Измеряем ширину всех элементов
+                let totalWidth = 0;
+                const sizes = items.map(it => {
+                    const tw = ctx.measureText(it.label).width;
+                    const w = boxSize + 3 + tw;
+                    totalWidth += w;
+                    return { w, tw };
+                });
+                totalWidth += itemGap * (items.length - 1);
+
+                // Центрируем по chartArea
+                const startX = chartArea.left + ((chartArea.right - chartArea.left) - totalWidth) / 2;
+                let x = startX;
+
+                items.forEach((it, i) => {
+                    // Квадратик
+                    ctx.fillStyle = it.color;
+                    roundRect(ctx, x, top, boxSize, boxSize, 2);
+                    ctx.fill();
+                    // Текст
+                    ctx.fillStyle = '#c8d8e8';
+                    ctx.textAlign = 'left';
+                    ctx.fillText(it.label, x + boxSize + 3, top + boxSize / 2 + 0.5);
+                    x += sizes[i].w + itemGap;
+                });
+                ctx.restore();
+            }
+        };
+
         function filterByPeriod(entries, period) {
             if (period === 'all' || entries.length === 0) return entries.slice();
             const lastDate = entries[entries.length - 1].date;
@@ -690,8 +758,6 @@
             swingEl.innerHTML = swing.toFixed(1) + ' кг<small>' + minW.toFixed(1) + ' → ' + maxW.toFixed(1) + '</small>';
         }
 
-        // Параметр extendToMaxDate = true только для "Всё время".
-        // Для 1м / 3м / 6м / 1г — false, ось X заканчивается на последней реальной дате.
         function buildNormalChartData(entries, extendToMaxDate) {
             if (entries.length === 0) {
                 return { labels: [], weights: [], jan1Indices: [], yearSegments: [], monthSegments: [], vAxisIndex: 0 };
@@ -812,7 +878,6 @@
         function createNormalChart(entries) {
             if (chart) { chart.destroy(); chart = null; }
             const ctx = document.getElementById('weightChart').getContext('2d');
-            // Дотягиваем ось X до 31.12.2026 только для "Всё время"
             const extendToMaxDate = (CURRENT_PERIOD === 'all');
             const { labels, weights, jan1Indices, yearSegments, monthSegments, vAxisIndex } =
                 buildNormalChartData(entries, extendToMaxDate);
@@ -820,12 +885,11 @@
 
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
-            const padTop = isLandscapePhone ? 26 : (isSmall ? 28 : 32);
+            // Для "Всё время" сверху нужно место под легенду диапазонов
+            const padTopBase = isLandscapePhone ? 26 : (isSmall ? 28 : 32);
+            const padTop = (CURRENT_PERIOD === 'all') ? padTopBase + 22 : padTopBase;
             const padBottom = getPadBottom();
 
-            // Вертикальная сетка по месяцам:
-            //  - "Всё время" — только по годам (без месяцев)
-            //  - 1 год / 6 месяцев / 3 месяца / 1 месяц — по месяцам
             const showMonthGrid = (CURRENT_PERIOD === '6m' || CURRENT_PERIOD === '1y' ||
                                    CURRENT_PERIOD === '3m' || CURRENT_PERIOD === '1m');
 
@@ -843,7 +907,7 @@
 
             chart = new Chart(ctx, {
                 type: 'bar',
-                plugins: [monthGridPlugin, yAxisLinePlugin, yearLinesPlugin, minMaxLinesPlugin, monthLabelsPlugin, yearLabelsPlugin],
+                plugins: [monthGridPlugin, yAxisLinePlugin, yearLinesPlugin, minMaxLinesPlugin, monthLabelsPlugin, yearLabelsPlugin, weightLegendPlugin],
                 data: {
                     labels: labels,
                     datasets: [{
@@ -914,6 +978,8 @@
             chart._yearSegments = yearSegments;
             chart._monthSegments = monthSegments;
             chart._vAxisIndex = vAxisIndex;
+            chart._showWeightLegend = (CURRENT_PERIOD === 'all');
+            chart._legendWeights = entries.map(e => e.weight);
 
             setTimeout(() => {
                 if (!chart) return;
@@ -1140,15 +1206,23 @@
             }
         }
 
+        function setActivePeriod(period) {
+            // Если включён режим сравнения — выключаем его
+            if (COMPARE_MODE) {
+                COMPARE_MODE = false;
+                document.getElementById('compareBtn').classList.remove('active');
+            }
+            CURRENT_PERIOD = period;
+            document.querySelectorAll('.period-btn[data-period]').forEach(b => {
+                b.classList.toggle('active', b.dataset.period === period);
+            });
+            redraw();
+        }
+
         function setupPeriodButtons() {
             document.querySelectorAll('.period-btn[data-period]').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    document.querySelectorAll('.period-btn[data-period]').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    CURRENT_PERIOD = btn.dataset.period;
-                    COMPARE_MODE = false;
-                    document.getElementById('compareBtn').classList.remove('active');
-                    redraw();
+                    setActivePeriod(btn.dataset.period);
                 });
             });
             document.getElementById('compareBtn').addEventListener('click', () => {
@@ -1164,10 +1238,65 @@
             });
         }
 
+        // === Свайпы по области графика ===
+        function setupSwipe() {
+            const container = document.getElementById('chartContainer');
+            if (!container) return;
+
+            // Только на устройствах с touch-вводом
+            const isTouch = window.matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window);
+            if (!isTouch) return;
+
+            let startX = 0;
+            let startY = 0;
+            let tracking = false;
+            const THRESHOLD = 50;    // минимальная длина свайпа в px
+            const VERTICAL_DOMINANCE = 1.2; // игнорируем, если вертикальное движение больше
+
+            container.addEventListener('touchstart', (e) => {
+                if (e.touches.length !== 1) { tracking = false; return; }
+                const t = e.touches[0];
+                startX = t.clientX;
+                startY = t.clientY;
+                tracking = true;
+            }, { passive: true });
+
+            container.addEventListener('touchend', (e) => {
+                if (!tracking) return;
+                tracking = false;
+                if (!e.changedTouches || e.changedTouches.length === 0) return;
+                const t = e.changedTouches[0];
+                const dx = t.clientX - startX;
+                const dy = t.clientY - startY;
+
+                if (Math.abs(dx) < THRESHOLD) return;
+                if (Math.abs(dy) > Math.abs(dx) * VERTICAL_DOMINANCE) return;
+
+                // Если включён режим сравнения — свайп выключит его и перейдёт к периодам
+                if (COMPARE_MODE) {
+                    COMPARE_MODE = false;
+                    document.getElementById('compareBtn').classList.remove('active');
+                }
+
+                const idx = PERIOD_ORDER.indexOf(CURRENT_PERIOD);
+                if (idx === -1) return;
+
+                // Свайп влево (dx < 0) — следующий период (к большему диапазону)
+                // Свайп вправо (dx > 0) — предыдущий период (к меньшему диапазону)
+                let nextIdx = dx < 0 ? idx + 1 : idx - 1;
+                if (nextIdx < 0 || nextIdx >= PERIOD_ORDER.length) return;
+
+                setActivePeriod(PERIOD_ORDER[nextIdx]);
+            }, { passive: true });
+
+            container.addEventListener('touchcancel', () => { tracking = false; }, { passive: true });
+        }
+
         window.addEventListener('resize', () => { if (chart) chart.resize(); });
 
         window.onload = () => {
             setupPeriodButtons();
+            setupSwipe();
             loadData();
         };
     </script>
