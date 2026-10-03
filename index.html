@@ -101,13 +101,16 @@
             white-space: nowrap;
             line-height: 1.1;
         }
+        /* Стрелки: высота уменьшена, ширина сохранена (scaleX = 1) */
         .trend-arrow {
             display: inline-block;
-            font-size: 18px;
+            font-size: 22px;
             font-weight: 900;
             margin-left: 4px;
             vertical-align: middle;
             line-height: 1;
+            transform: scaleY(0.65) scaleX(1);
+            transform-origin: center center;
         }
         .trend-up { color: #e74c3c; }
         .trend-down { color: #27ae60; }
@@ -186,14 +189,14 @@
 
         @media (max-width: 1100px) {
             .stat-item p { font-size: 15px; }
-            .trend-arrow { font-size: 16px; }
+            .trend-arrow { font-size: 20px; }
         }
         @media (max-width: 900px) {
             .stats { grid-template-columns: repeat(5, 1fr); gap: 7px; margin-bottom: 6px; }
             .stat-item p { font-size: 14px; }
             .stat-item h3 { font-size: 8px; }
             .stat-item p small { font-size: 8px; }
-            .trend-arrow { font-size: 15px; }
+            .trend-arrow { font-size: 18px; }
             .period-btn { width: 75px; flex: 0 0 75px; font-size: 11px; padding: 5px 6px; }
             .period-btn.compare { min-width: 120px; font-size: 11px; }
         }
@@ -205,7 +208,7 @@
             .stat-item h3 { font-size: 7px; letter-spacing: 0.3px; margin-bottom: 2px; }
             .stat-item p { font-size: 12px; }
             .stat-item p small { font-size: 7px; }
-            .trend-arrow { font-size: 13px; margin-left: 2px; }
+            .trend-arrow { font-size: 16px; margin-left: 2px; }
             .period-bar { gap: 3px; margin-bottom: 5px; }
             .period-btn { width: 62px; flex: 0 0 62px; font-size: 10px; padding: 4px 5px; border-radius: 6px; }
             .period-btn.compare { min-width: 100px; font-size: 10px; }
@@ -215,7 +218,7 @@
             .stat-item h3 { display: none; }
             .period-btn { width: 54px; flex: 0 0 54px; font-size: 9px; padding: 4px 4px; }
             .period-btn.compare { min-width: 90px; font-size: 9px; }
-            .trend-arrow { font-size: 12px; }
+            .trend-arrow { font-size: 14px; }
         }
         @media (max-width: 900px) and (orientation: landscape) {
             .stats { grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 4px; }
@@ -1039,8 +1042,6 @@
         }
 
         function redraw() {
-            // Если режим сравнения — всегда показываем данные за всё время
-            // и обновляем статистику за всё время
             if (COMPARE_MODE) {
                 const allEntries = filterByPeriod(ALL_ENTRIES, 'all');
                 updateStats(allEntries);
@@ -1133,7 +1134,6 @@
                     document.querySelectorAll('.period-btn[data-period]').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     CURRENT_PERIOD = btn.dataset.period;
-                    // Клик по периоду отключает режим сравнения
                     COMPARE_MODE = false;
                     document.getElementById('compareBtn').classList.remove('active');
                     redraw();
@@ -1142,7 +1142,6 @@
             document.getElementById('compareBtn').addEventListener('click', () => {
                 COMPARE_MODE = !COMPARE_MODE;
                 document.getElementById('compareBtn').classList.toggle('active', COMPARE_MODE);
-                // Период не меняем — но в режиме сравнения он игнорируется
                 redraw();
             });
         }
