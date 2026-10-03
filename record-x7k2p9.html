@@ -101,7 +101,7 @@
             line-height: 1.1;
         }
 
-        /* ============ КНОПКА ЗАПИСИ — прямоугольная, 2× высоты ============ */
+        /* ============ КНОПКА ЗАПИСИ ============ */
         .voice-btn {
             background: #e74c3c;
             border-radius: 10px;
@@ -116,15 +116,13 @@
             text-align: center;
             opacity: 0;
             animation: fadeInUp 0.5s 0.30s forwards;
-            /* Ширина в 2 раза больше высоты */
             aspect-ratio: 2 / 1;
             height: 100%;
             width: auto;
             min-width: 0;
-            /* Выравнивание по правому краю своей ячейки */
             justify-self: end;
             align-self: stretch;
-            padding: 0;
+            padding: 0 8px;
             overflow: hidden;
         }
         .voice-btn:hover {
@@ -138,20 +136,43 @@
             font-size: 30px;
             line-height: 1;
         }
+        /* Состояние "слушаю" — кнопка тёмно-красная, пульсирует, показывает «Говорите» */
         .voice-btn.listening {
             background: #c0392b;
             animation: voicePulse 1.2s infinite;
         }
+        .voice-btn.listening .icon {
+            display: none;
+        }
+        .voice-btn .listening-text {
+            display: none;
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            text-align: center;
+            line-height: 1.1;
+        }
+        .voice-btn.listening .listening-text {
+            display: block;
+        }
+        /* Состояние "показываю результат" — зелёная, с цифрой и датой */
         .voice-btn.showing {
             background: #27ae60;
         }
+        .voice-btn.showing .icon {
+            display: none;
+        }
         .voice-btn .result {
+            display: none;
             font-size: 13px;
             font-weight: 700;
             line-height: 1.1;
             white-space: normal;
             word-break: break-word;
             padding: 2px;
+        }
+        .voice-btn.showing .result {
+            display: block;
         }
         .voice-btn .result small {
             display: block;
@@ -287,6 +308,7 @@
             .stat-item h3 { font-size: 8px; }
             .stat-item p small { font-size: 8px; }
             .voice-btn .icon { font-size: 26px; }
+            .voice-btn .listening-text { font-size: 12px; }
         }
         @media (max-width: 600px) {
             body { padding: 6px; }
@@ -304,14 +326,16 @@
             }
             .stat-item p { font-size: 12px; }
             .stat-item p small { font-size: 7px; }
-            .voice-btn { border-radius: 8px; }
+            .voice-btn { border-radius: 8px; padding: 0 4px; }
             .voice-btn .icon { font-size: 22px; }
+            .voice-btn .listening-text { font-size: 11px; }
             .voice-btn .result { font-size: 10px; }
             .chart-container { padding: 4px; min-height: 200px; }
         }
         @media (max-width: 420px) {
             .stat-item h3 { display: none; }
             .voice-btn .icon { font-size: 18px; }
+            .voice-btn .listening-text { font-size: 10px; }
         }
         @media (max-width: 900px) and (orientation: landscape) {
             .stats {
@@ -324,6 +348,7 @@
             .stat-item p { font-size: 12px; }
             .stat-item p small { font-size: 7px; }
             .voice-btn .icon { font-size: 22px; }
+            .voice-btn .listening-text { font-size: 11px; }
             .chart-container { min-height: 180px; }
         }
     </style>
@@ -368,6 +393,8 @@
                 </div>
                 <div class="voice-btn" id="voiceBtn" title="Сказать массу тела">
                     <div class="icon" id="voiceIcon">🎤</div>
+                    <div class="listening-text">Говорите</div>
+                    <div class="result"></div>
                 </div>
             </div>
             <div class="chart-container" id="chartContainer">
@@ -1005,6 +1032,9 @@
         // ============================================================
         const voiceBtn = document.getElementById('voiceBtn');
         const voiceStatus = document.getElementById('voiceStatus');
+        const iconEl = document.getElementById('voiceIcon');
+        const listeningTextEl = voiceBtn.querySelector('.listening-text');
+        const resultEl = voiceBtn.querySelector('.result');
 
         const MONTHS_RU_FULL = [
             'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
@@ -1105,13 +1135,11 @@
         function showResultOnButton(weight, date) {
             return new Promise(resolve => {
                 voiceBtn.classList.add('showing');
-                voiceBtn.innerHTML =
-                    '<div class="result">' + weight.toFixed(1) + ' кг' +
-                    (date ? '<small>' + date + '</small>' : '<small>сегодня</small>') +
-                    '</div>';
+                resultEl.innerHTML = weight.toFixed(1) + ' кг' +
+                    (date ? '<small>' + date + '</small>' : '<small>сегодня</small>');
                 setTimeout(() => {
-                    voiceBtn.innerHTML = '<div class="icon" id="voiceIcon">🎤</div>';
                     voiceBtn.classList.remove('showing');
+                    resultEl.innerHTML = '';
                     resolve();
                 }, 2000);
             });
@@ -1129,7 +1157,7 @@
             recognition.maxAlternatives = 1;
 
             voiceBtn.classList.add('listening');
-            showStatus('🎤 Говорите...');
+            // Надпись «Говорите» теперь показывается прямо на кнопке через CSS
 
             recognition.onresult = async (event) => {
                 voiceBtn.classList.remove('listening');
