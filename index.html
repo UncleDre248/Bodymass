@@ -444,7 +444,6 @@
             return { barPercentage: 1.0, categoryPercentage: 1.0 };
         }
 
-        // Уменьшенные нижние отступы — больше места под сам график
         function getPadBottom() {
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
@@ -925,7 +924,6 @@
 
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
-            // Минимальный верхний отступ + небольшой запас под легенду
             const padTopBase = isLandscapePhone ? 8 : (isSmall ? 10 : 12);
             const padTop = padTopBase + 14;
             const padBottom = getPadBottom();
@@ -1050,6 +1048,7 @@
 
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
+            // Приводим верхний отступ к тем же значениям, что и у обычной диаграммы
             const padTop = isLandscapePhone ? 8 : (isSmall ? 10 : 12);
             const padBottom = getPadBottom();
 
@@ -1090,17 +1089,19 @@
                     maintainAspectRatio: false,
                     animation: { duration: 500, easing: 'easeOutQuart' },
                     interaction: { mode: 'nearest', intersect: false },
+                    // left/right приведены к 10 — как на обычной диаграмме
                     layout: { padding: { top: padTop, bottom: padBottom, left: 10, right: 10 } },
                     plugins: {
                         legend: {
                             display: true,
                             position: 'top',
+                            // Уменьшенные отступы легенды — освобождают вертикальное место
                             labels: {
                                 color: '#e8eef5',
-                                font: { size: 10 },
-                                boxWidth: 10,
-                                boxHeight: 10,
-                                padding: 10,
+                                font: { size: 9 },
+                                boxWidth: 9,
+                                boxHeight: 9,
+                                padding: 8,
                                 usePointStyle: true,
                                 pointStyle: 'circle'
                             }
@@ -1141,6 +1142,7 @@
                                 font: { size: 10 },
                                 padding: 4
                             },
+                            // Уменьшено с 8 до 6 — как на обычной диаграмме
                             afterFit(scale) { scale.width += 6; }
                         },
                         x: {
