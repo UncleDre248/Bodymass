@@ -389,6 +389,15 @@
             return { barPercentage: 1.0, categoryPercentage: 1.0 };
         }
 
+        // ОБЩИЙ padBottom для всех режимов — ось X больше не «прыгает»
+        function getPadBottom() {
+            const isSmall = window.innerWidth < 600;
+            const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
+            if (isLandscapePhone) return 60;
+            if (isSmall) return 65;
+            return 70;
+        }
+
         const yAxisLinePlugin = {
             id: 'yAxisLine',
             beforeDatasetsDraw(chart) {
@@ -583,19 +592,23 @@
             }
         };
 
+        // Плагин подписей годов — работает и для 1м/3м, и для 6м/1г/всё
         const yearLabelsPlugin = {
             id: 'yearLabels',
             afterDraw(chart) {
                 if (chart._compareMode) return;
-                if (!chart._showMonthYearLabels) return;
+                if (!chart._yearSegments || chart._yearSegments.length === 0) return;
                 const { ctx, chartArea, scales } = chart;
                 if (!chartArea) return;
-                if (!chart._yearSegments || chart._yearSegments.length === 0) return;
                 const xScale = scales.x;
                 const chartWidth = chartArea.right - chartArea.left;
                 const isSmall = chartWidth < 400;
                 const fontPx = isSmall ? 9 : 11;
-                const offset = isSmall ? 38 : 42;
+                // Для 1м/3м — отступ больше (там даты наклонены и занимают больше места)
+                // Для 6м/1г/всё — отступ как раньше (там только месяцы)
+                const offset = chart._showDateTicks
+                    ? (isSmall ? 55 : 60)
+                    : (isSmall ? 38 : 42);
                 ctx.save();
                 ctx.font = `bold ${fontPx}px Inter, sans-serif`;
                 ctx.fillStyle = 'rgba(200, 216, 232, 0.55)';
@@ -800,11 +813,11 @@
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
             const padTop = isLandscapePhone ? 26 : (isSmall ? 28 : 32);
+            const padBottom = getPadBottom();
 
             const showDateTicks = (CURRENT_PERIOD === '1m' || CURRENT_PERIOD === '3m');
             const showMonthYear = !showDateTicks;
             const showMonthGrid = (CURRENT_PERIOD === '6m' || CURRENT_PERIOD === '1y' || CURRENT_PERIOD === 'all');
-            const padBottom = isLandscapePhone ? 60 : (isSmall ? 65 : 70);
 
             const barParams = getBarParams(CURRENT_PERIOD);
 
@@ -900,6 +913,7 @@
             chart._compareMode = false;
             chart._showMonthYearLabels = showMonthYear;
             chart._showMonthGrid = showMonthGrid;
+            chart._showDateTicks = showDateTicks;
             chart._jan1Indices = jan1Indices;
             chart._yearSegments = yearSegments;
             chart._monthSegments = monthSegments;
@@ -935,7 +949,7 @@
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
             const padTop = isLandscapePhone ? 26 : (isSmall ? 28 : 32);
-            const padBottom = isLandscapePhone ? 30 : (isSmall ? 35 : 40);
+            const padBottom = isLandscapePhone ? 60 : (isSmall ? 65 : 70);
 
             const MONTH_MID_DAY = [15, 45, 74, 105, 135, 166, 196, 227, 258, 288, 319, 349];
 
@@ -1142,8 +1156,6 @@
                 COMPARE_MODE = !COMPARE_MODE;
                 document.getElementById('compareBtn').classList.toggle('active', COMPARE_MODE);
                 if (COMPARE_MODE) {
-                    // Режим сравнения всегда работает по всему периоду —
-                    // подсвечиваем «Всё время»
                     document.querySelectorAll('.period-btn[data-period]').forEach(b => {
                         b.classList.toggle('active', b.dataset.period === 'all');
                     });
