@@ -374,6 +374,11 @@
             '#4db8ff', '#f39c12', '#e74c3c', '#27ae60', '#9b59b6', '#00cec9', '#e67e22'
         ];
 
+        // Единый цвет сетки и осей
+        const GRID_COLOR = 'rgba(255,255,255,0.10)';
+        // Цвет линий 1 января — чуть плотнее обычной сетки, но заметно мягче прежних 0.25
+        const YEAR_LINE_COLOR = 'rgba(255,255,255,0.18)';
+
         const V_AXIS_DATE = new Date(2024, 7, 1);
         const MAX_DATE = new Date(2026, 11, 31, 23, 59, 59);
 
@@ -479,7 +484,6 @@
             return 52;
         }
 
-        // === Number rolling ===
         function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
 
         function animateNumber(el, from, to, duration, formatter) {
@@ -506,19 +510,14 @@
             anim.rafId = requestAnimationFrame(tick);
         }
 
-        // === Вспомогательная функция: X-координата ЛЕВОГО края периода ===
-        // Раньше линии сетки шли по центру первого столбца месяца/года.
-        // Теперь — по левому краю, сдвигая позицию на половину ширины шага.
         function getLeftEdgeX(chart, idx) {
             const xScale = chart.scales.x;
             const center = xScale.getPixelForValue(idx);
-            // Половина ширины шага — вычисляется для каждого режима отдельно.
-            // Для bar-графика — это половина ширины столбца (chart._barWidthHalf).
-            // Для линейного (сравнение) — половина ширины одного дня (chart._stepHalf).
             const half = chart._barWidthHalf != null ? chart._barWidthHalf : (chart._stepHalf || 0);
             return center - half;
         }
 
+        // === Плагины с единым цветом сетки ===
         const yAxisLinePlugin = {
             id: 'yAxisLine',
             beforeDatasetsDraw(chart) {
@@ -531,7 +530,7 @@
                 ctx.save();
                 ctx.beginPath();
                 ctx.lineWidth = 1;
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+                ctx.strokeStyle = GRID_COLOR; // ← как у осей
                 ctx.moveTo(x, chartArea.top);
                 ctx.lineTo(x, chartArea.bottom);
                 ctx.stroke();
@@ -549,7 +548,7 @@
                 ctx.save();
                 ctx.setLineDash([]);
                 ctx.lineWidth = 1;
-                ctx.strokeStyle = 'rgba(200, 216, 232, 0.25)';
+                ctx.strokeStyle = YEAR_LINE_COLOR; // чуть плотнее обычной сетки
                 chart._jan1Indices.forEach(idx => {
                     const x = getLeftEdgeX(chart, idx);
                     if (x >= chartArea.left && x <= chartArea.right) {
@@ -574,7 +573,7 @@
                 ctx.save();
                 ctx.setLineDash([]);
                 ctx.lineWidth = 1;
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+                ctx.strokeStyle = GRID_COLOR; // ← как у осей
                 chart._monthSegments.forEach(seg => {
                     const x = getLeftEdgeX(chart, seg.startIdx);
                     if (x > chartArea.left && x <= chartArea.right) {
@@ -595,15 +594,13 @@
                 const { ctx, chartArea } = chart;
                 if (!chartArea) return;
                 const xScale = chart.scales.x;
-                // Половина ширины одного дня
                 const half = chart._stepHalf || 0;
                 const MONTH_START_DAY = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
                 ctx.save();
                 ctx.setLineDash([]);
                 ctx.lineWidth = 1;
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+                ctx.strokeStyle = GRID_COLOR; // ← как у осей
                 MONTH_START_DAY.forEach(day => {
-                    // Сдвигаем на половину дня влево, чтобы линия легла на левый край дня
                     const x = xScale.getPixelForValue(day) - half;
                     if (x > chartArea.left && x <= chartArea.right) {
                         ctx.beginPath();
@@ -1069,7 +1066,8 @@
                                 font: { size: 10 },
                                 padding: { top: 0, bottom: 2 }
                             },
-                            grid: { color: 'rgba(255,255,255,0.10)' },
+                            // Встроенная горизонтальная сетка Chart.js — оставляем как есть
+                            grid: { color: GRID_COLOR },
                             ticks: {
                                 color: '#c8d8e8',
                                 stepSize: 1,
@@ -1096,8 +1094,6 @@
             chart._showWeightLegend = true;
             chart._legendWeights = entries.map(e => e.weight);
 
-            // Рассчитываем половину ширины шага (полстолбца) — она нужна сетке,
-            // чтобы линии шли по левому краю столбца, а не по центру.
             setTimeout(() => {
                 if (!chart) return;
                 const area = chart.chartArea;
@@ -1211,7 +1207,7 @@
                                 font: { size: 10 },
                                 padding: { top: 0, bottom: 2 }
                             },
-                            grid: { color: 'rgba(255,255,255,0.10)' },
+                            grid: { color: GRID_COLOR },
                             ticks: {
                                 color: '#c8d8e8',
                                 stepSize: 1,
@@ -1234,8 +1230,6 @@
 
             chart._compareMode = true;
 
-            // Рассчитываем половину ширины одного дня — для линейной оси это
-            // chartArea.width / 365.5 (диапазон 0..366, но реальные данные в 1..365).
             setTimeout(() => {
                 if (!chart) return;
                 const area = chart.chartArea;
