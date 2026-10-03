@@ -302,6 +302,7 @@
         ];
 
         const V_AXIS_DATE = new Date(2024, 7, 1);
+        // Максимальная дата — 31.12.2026. Ось X всегда дотягивается до этой даты
         const MAX_DATE = new Date(2026, 11, 31, 23, 59, 59);
 
         let ALL_ENTRIES = [];
@@ -389,8 +390,6 @@
             return { barPercentage: 1.0, categoryPercentage: 1.0 };
         }
 
-        // Единый padBottom для всех режимов.
-        // Достаточно места: 70px (большой), 65px (телефон), 60px (телефон альбом)
         function getPadBottom() {
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
@@ -558,7 +557,6 @@
             }
         };
 
-        // Подписи месяцев — теперь показываются ВСЕГДА (включая 1м / 3м / 1г / 6м)
         const monthLabelsPlugin = {
             id: 'monthLabels',
             afterDraw(chart) {
@@ -593,7 +591,6 @@
             }
         };
 
-        // Подписи годов — теперь ВСЕГДА показываются, одинаково для всех режимов
         const yearLabelsPlugin = {
             id: 'yearLabels',
             afterDraw(chart) {
@@ -692,8 +689,8 @@
             }
             const firstDate = new Date(entries[0].date);
             firstDate.setHours(0, 0, 0, 0);
-            const lastDate = new Date(entries[entries.length - 1].date);
-            lastDate.setHours(0, 0, 0, 0);
+            // КЛЮЧЕВОЕ: последняя дата всегда 31.12.2026, даже если данных меньше
+            const lastDate = new Date(2026, 11, 31);
 
             const byDay = {};
             entries.forEach(e => {
@@ -712,6 +709,7 @@
                 const key = d.toISOString().slice(0, 10);
                 labels.push(formatDateShort(d));
                 dates.push(new Date(d));
+                // Если данных на этот день нет — ставим 0 (пустой столбик)
                 weights.push(byDay[key] !== undefined ? byDay[key] : 0);
                 if (d.getMonth() === 0 && d.getDate() === 1) jan1Indices.push(idx);
                 idx++;
@@ -817,7 +815,7 @@
             const barParams = getBarParams(CURRENT_PERIOD);
 
             let barPercentage = barParams.barPercentage;
-            if (CURRENT_PERIOD === '1y') {
+            if (CURRENT_PERIOD === '1y' || CURRENT_PERIOD === 'all') {
                 const area = document.getElementById('chartContainer').getBoundingClientRect();
                 const areaWidth = area.width - 24;
                 const n = labels.length || 365;
@@ -887,9 +885,7 @@
                         x: {
                             title: { display: false },
                             grid: { display: false },
-                            ticks: {
-                                display: false
-                            }
+                            ticks: { display: false }
                         }
                     }
                 }
@@ -932,12 +928,10 @@
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
             const padTop = isLandscapePhone ? 26 : (isSmall ? 28 : 32);
-            // Тот же padBottom, что и в обычном режиме — высоты совпадут
             const padBottom = getPadBottom();
 
             const MONTH_MID_DAY = [15, 45, 74, 105, 135, 166, 196, 227, 258, 288, 319, 349];
 
-            // Подписи месяцев внизу для режима сравнения
             const compareMonthLabelsPlugin = {
                 id: 'compareMonths',
                 afterDraw(c) {
@@ -948,9 +942,6 @@
                     ctx.save();
                     ctx.font = `bold ${fontPx}px Inter, sans-serif`;
                     ctx.fillStyle = 'rgba(200, 216, 232, 0.75)';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    // Вертикальные подписи месяцев
                     for (let m = 0; m < 12; m++) {
                         const x = xScale.getPixelForValue(MONTH_MID_DAY[m]);
                         if (x >= chartArea.left && x <= chartArea.right) {
