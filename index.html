@@ -379,7 +379,6 @@
 
         const X_MAX_DATE = new Date(2026, 11, 31);
 
-        // Порядок вкладок для свайпа — как в панели, включая «Сравнение по годам»
         const SWIPE_ORDER = ['1m', '3m', '6m', '1y', 'all', 'compare'];
 
         let ALL_ENTRIES = [];
@@ -387,7 +386,6 @@
         let COMPARE_MODE = false;
         let chart = null;
 
-        // Счётчики для number rolling
         const statAnimators = {
             currentWeight: { current: null, rafId: null },
             maxWeight:     { current: null, rafId: null },
@@ -466,7 +464,6 @@
             ctx.closePath();
         }
 
-        // «1 месяц» и «3 месяца» — с зазорами; «6 месяцев», «1 год» и «Всё время» — без зазоров
         function getBarParams(period) {
             if (period === '1m' || period === '3m') {
                 return { barPercentage: 0.85, categoryPercentage: 0.95 };
@@ -509,25 +506,34 @@
             anim.rafId = requestAnimationFrame(tick);
         }
 
-        // === Плагины графика ===
+        // === Вспомогательная функция: X-координата ЛЕВОГО края периода ===
+        // Раньше линии сетки шли по центру первого столбца месяца/года.
+        // Теперь — по левому краю, сдвигая позицию на половину ширины шага.
+        function getLeftEdgeX(chart, idx) {
+            const xScale = chart.scales.x;
+            const center = xScale.getPixelForValue(idx);
+            // Половина ширины шага — вычисляется для каждого режима отдельно.
+            // Для bar-графика — это половина ширины столбца (chart._barWidthHalf).
+            // Для линейного (сравнение) — половина ширины одного дня (chart._stepHalf).
+            const half = chart._barWidthHalf != null ? chart._barWidthHalf : (chart._stepHalf || 0);
+            return center - half;
+        }
+
         const yAxisLinePlugin = {
             id: 'yAxisLine',
             beforeDatasetsDraw(chart) {
                 if (chart._compareMode) return;
-                const { ctx, chartArea, scales } = chart;
+                const { ctx, chartArea } = chart;
                 if (!chartArea) return;
                 if (chart._vAxisIndex == null) return;
-                const xScale = scales.x;
-                const x = xScale.getPixelForValue(chart._vAxisIndex);
+                const x = getLeftEdgeX(chart, chart._vAxisIndex);
                 if (x < chartArea.left || x > chartArea.right) return;
-                const halfBar = chart._barWidthHalf || 0;
-                const xLeft = x - halfBar;
                 ctx.save();
                 ctx.beginPath();
                 ctx.lineWidth = 1;
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-                ctx.moveTo(xLeft, chartArea.top);
-                ctx.lineTo(xLeft, chartArea.bottom);
+                ctx.moveTo(x, chartArea.top);
+                ctx.lineTo(x, chartArea.bottom);
                 ctx.stroke();
                 ctx.restore();
             }
@@ -537,16 +543,15 @@
             id: 'yearLines',
             beforeDatasetsDraw(chart) {
                 if (chart._compareMode) return;
-                const { ctx, chartArea, scales } = chart;
+                const { ctx, chartArea } = chart;
                 if (!chartArea) return;
                 if (!chart._jan1Indices || chart._jan1Indices.length === 0) return;
-                const xScale = scales.x;
                 ctx.save();
                 ctx.setLineDash([]);
                 ctx.lineWidth = 1;
                 ctx.strokeStyle = 'rgba(200, 216, 232, 0.25)';
                 chart._jan1Indices.forEach(idx => {
-                    const x = xScale.getPixelForValue(idx);
+                    const x = getLeftEdgeX(chart, idx);
                     if (x >= chartArea.left && x <= chartArea.right) {
                         ctx.beginPath();
                         ctx.moveTo(x, chartArea.top);
@@ -563,16 +568,15 @@
             beforeDatasetsDraw(chart) {
                 if (chart._compareMode) return;
                 if (!chart._showMonthGrid) return;
-                const { ctx, chartArea, scales } = chart;
+                const { ctx, chartArea } = chart;
                 if (!chartArea) return;
                 if (!chart._monthSegments) return;
-                const xScale = scales.x;
                 ctx.save();
                 ctx.setLineDash([]);
                 ctx.lineWidth = 1;
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
                 chart._monthSegments.forEach(seg => {
-                    const x = xScale.getPixelForValue(seg.startIdx);
+                    const x = getLeftEdgeX(chart, seg.startIdx);
                     if (x > chartArea.left && x <= chartArea.right) {
                         ctx.beginPath();
                         ctx.moveTo(x, chartArea.top);
@@ -588,16 +592,19 @@
             id: 'compareMonthGrid',
             beforeDatasetsDraw(chart) {
                 if (!chart._compareMode) return;
-                const { ctx, chartArea, scales } = chart;
+                const { ctx, chartArea } = chart;
                 if (!chartArea) return;
-                const xScale = scales.x;
+                const xScale = chart.scales.x;
+                // Половина ширины одного дня
+                const half = chart._stepHalf || 0;
                 const MONTH_START_DAY = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
                 ctx.save();
                 ctx.setLineDash([]);
                 ctx.lineWidth = 1;
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
                 MONTH_START_DAY.forEach(day => {
-                    const x = xScale.getPixelForValue(day);
+                    // Сдвигаем на половину дня влево, чтобы линия легла на левый край дня
+                    const x = xScale.getPixelForValue(day) - half;
                     if (x > chartArea.left && x <= chartArea.right) {
                         ctx.beginPath();
                         ctx.moveTo(x, chartArea.top);
@@ -677,6 +684,7 @@
                 const { ctx, chartArea, scales } = chart;
                 if (!chartArea) return;
                 const xScale = scales.x;
+                const half = chart._barWidthHalf || 0;
                 const chartWidth = chartArea.right - chartArea.left;
                 const isSmall = chartWidth < 400;
                 const fontPx = isSmall ? 8 : 10;
@@ -685,8 +693,8 @@
                 ctx.font = `bold ${fontPx}px Inter, sans-serif`;
                 ctx.fillStyle = 'rgba(200, 216, 232, 0.75)';
                 chart._monthSegments.forEach(seg => {
-                    const xStart = xScale.getPixelForValue(seg.startIdx);
-                    const xEnd   = xScale.getPixelForValue(seg.endIdx);
+                    const xStart = xScale.getPixelForValue(seg.startIdx) - half;
+                    const xEnd   = xScale.getPixelForValue(seg.endIdx) - half;
                     const xCenter = (xStart + xEnd) / 2;
                     if (xCenter >= chartArea.left && xCenter <= chartArea.right) {
                         const label = MONTHS_RU[seg.month];
@@ -711,6 +719,7 @@
                 const { ctx, chartArea, scales } = chart;
                 if (!chartArea) return;
                 const xScale = scales.x;
+                const half = chart._barWidthHalf || 0;
                 const chartWidth = chartArea.right - chartArea.left;
                 const isSmall = chartWidth < 400;
                 const fontPx = isSmall ? 9 : 11;
@@ -722,8 +731,8 @@
                 ctx.textBaseline = 'top';
                 const y = chartArea.bottom + offset;
                 chart._yearSegments.forEach(seg => {
-                    const xStart = xScale.getPixelForValue(seg.startIdx);
-                    const xEnd   = xScale.getPixelForValue(seg.endIdx);
+                    const xStart = xScale.getPixelForValue(seg.startIdx) - half;
+                    const xEnd   = xScale.getPixelForValue(seg.endIdx) - half;
                     const xCenter = (xStart + xEnd) / 2;
                     if (xCenter >= chartArea.left && xCenter <= chartArea.right) {
                         ctx.fillText(seg.year, xCenter, y);
@@ -1087,6 +1096,8 @@
             chart._showWeightLegend = true;
             chart._legendWeights = entries.map(e => e.weight);
 
+            // Рассчитываем половину ширины шага (полстолбца) — она нужна сетке,
+            // чтобы линии шли по левому краю столбца, а не по центру.
             setTimeout(() => {
                 if (!chart) return;
                 const area = chart.chartArea;
@@ -1222,6 +1233,18 @@
             });
 
             chart._compareMode = true;
+
+            // Рассчитываем половину ширины одного дня — для линейной оси это
+            // chartArea.width / 365.5 (диапазон 0..366, но реальные данные в 1..365).
+            setTimeout(() => {
+                if (!chart) return;
+                const area = chart.chartArea;
+                if (!area) return;
+                const stepPx = (area.right - area.left) / 366;
+                chart._stepHalf = stepPx / 2;
+                chart.draw();
+            }, 0);
+
             window.weightChartInstance = chart;
         }
 
@@ -1312,13 +1335,10 @@
             }
         }
 
-        // === Универсальное переключение вкладки по ключу ===
-        // Ключи: '1m', '3m', '6m', '1y', 'all', 'compare'
         function setActiveTab(tabKey) {
             if (tabKey === 'compare') {
                 COMPARE_MODE = true;
                 CURRENT_PERIOD = 'all';
-                // Подсвечиваем только «Сравнение по годам», у остальных убираем active
                 document.querySelectorAll('.period-btn[data-period]').forEach(b => b.classList.remove('active'));
                 document.getElementById('compareBtn').classList.add('active');
             } else {
@@ -1332,7 +1352,6 @@
             redraw();
         }
 
-        // Обратная совместимость с прежним API
         function setActivePeriod(period) {
             setActiveTab(period);
         }
@@ -1343,10 +1362,8 @@
                     setActiveTab(btn.dataset.period);
                 });
             });
-            // Кнопка сравнения теперь работает как тумблер: включить/выключить
             document.getElementById('compareBtn').addEventListener('click', () => {
                 if (COMPARE_MODE) {
-                    // Выключаем сравнение, возвращаемся ко «Всему времени»
                     setActiveTab('all');
                 } else {
                     setActiveTab('compare');
@@ -1354,7 +1371,6 @@
             });
         }
 
-        // === Циклический свайп по всем вкладкам ===
         function setupSwipe() {
             const container = document.getElementById('chartContainer');
             if (!container) return;
@@ -1387,13 +1403,10 @@
                 if (Math.abs(dx) < THRESHOLD) return;
                 if (Math.abs(dy) > Math.abs(dx) * VERTICAL_DOMINANCE) return;
 
-                // Текущий ключ вкладки: либо 'compare', либо период
                 const currentKey = COMPARE_MODE ? 'compare' : CURRENT_PERIOD;
                 let idx = SWIPE_ORDER.indexOf(currentKey);
-                if (idx === -1) idx = SWIPE_ORDER.length - 1; // fallback
+                if (idx === -1) idx = SWIPE_ORDER.length - 1;
 
-                // Свайп влево (dx < 0) — следующая вкладка; вправо — предыдущая.
-                // Порядок циклический.
                 const dir = dx < 0 ? 1 : -1;
                 const nextIdx = (idx + dir + SWIPE_ORDER.length) % SWIPE_ORDER.length;
                 setActiveTab(SWIPE_ORDER[nextIdx]);
