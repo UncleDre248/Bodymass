@@ -374,9 +374,10 @@
             '#4db8ff', '#f39c12', '#e74c3c', '#27ae60', '#9b59b6', '#00cec9', '#e67e22'
         ];
 
-        // Единый цвет сетки и осей
-        const GRID_COLOR = 'rgba(255,255,255,0.10)';
-        // Цвет линий 1 января — чуть плотнее обычной сетки, но заметно мягче прежних 0.25
+        // === Единые цвета каркаса ===
+        // Горизонтальная сетка (Chart.js) и вертикальная сетка (плагины)
+        // теперь используют один и тот же цвет — как у вертикальной годовой сетки.
+        const GRID_COLOR      = 'rgba(255,255,255,0.18)';
         const YEAR_LINE_COLOR = 'rgba(255,255,255,0.18)';
 
         const V_AXIS_DATE = new Date(2024, 7, 1);
@@ -530,7 +531,7 @@
                 ctx.save();
                 ctx.beginPath();
                 ctx.lineWidth = 1;
-                ctx.strokeStyle = GRID_COLOR; // ← как у осей
+                ctx.strokeStyle = GRID_COLOR;
                 ctx.moveTo(x, chartArea.top);
                 ctx.lineTo(x, chartArea.bottom);
                 ctx.stroke();
@@ -548,7 +549,7 @@
                 ctx.save();
                 ctx.setLineDash([]);
                 ctx.lineWidth = 1;
-                ctx.strokeStyle = YEAR_LINE_COLOR; // чуть плотнее обычной сетки
+                ctx.strokeStyle = YEAR_LINE_COLOR;
                 chart._jan1Indices.forEach(idx => {
                     const x = getLeftEdgeX(chart, idx);
                     if (x >= chartArea.left && x <= chartArea.right) {
@@ -573,7 +574,7 @@
                 ctx.save();
                 ctx.setLineDash([]);
                 ctx.lineWidth = 1;
-                ctx.strokeStyle = GRID_COLOR; // ← как у осей
+                ctx.strokeStyle = GRID_COLOR;
                 chart._monthSegments.forEach(seg => {
                     const x = getLeftEdgeX(chart, seg.startIdx);
                     if (x > chartArea.left && x <= chartArea.right) {
@@ -599,7 +600,7 @@
                 ctx.save();
                 ctx.setLineDash([]);
                 ctx.lineWidth = 1;
-                ctx.strokeStyle = GRID_COLOR; // ← как у осей
+                ctx.strokeStyle = GRID_COLOR;
                 MONTH_START_DAY.forEach(day => {
                     const x = xScale.getPixelForValue(day) - half;
                     if (x > chartArea.left && x <= chartArea.right) {
@@ -1066,7 +1067,7 @@
                                 font: { size: 10 },
                                 padding: { top: 0, bottom: 2 }
                             },
-                            // Встроенная горизонтальная сетка Chart.js — оставляем как есть
+                            // Горизонтальная сетка — теперь цвета годовой вертикальной сетки
                             grid: { color: GRID_COLOR },
                             ticks: {
                                 color: '#c8d8e8',
