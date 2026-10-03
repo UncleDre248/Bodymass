@@ -92,7 +92,7 @@
             margin-left: auto;
             width: auto;
             flex: 0 0 auto;
-            min-width: 140px;
+            min-width: 110px;
         }
 
         .stats {
@@ -260,7 +260,7 @@
         @media (max-width: 900px) {
             .period-bar { gap: 3px; padding: 0 3px; }
             .period-btn { width: 75px; flex: 0 0 75px; font-size: 11px; padding: 8px 6px 7px; border-radius: 9px 9px 0 0; }
-            .period-btn.compare { min-width: 120px; font-size: 11px; }
+            .period-btn.compare { min-width: 95px; font-size: 11px; }
             .stats { gap: 5px; margin: 5px 0 3px; }
             .stat-item { padding: 5px 4px; }
             .stat-item p { font-size: 13px; }
@@ -273,7 +273,7 @@
             .container { padding: 6px; border-radius: 10px; }
             .period-bar { gap: 3px; padding: 0 2px; }
             .period-btn { width: 62px; flex: 0 0 62px; font-size: 10px; padding: 8px 5px 7px; border-radius: 8px 8px 0 0; }
-            .period-btn.compare { min-width: 100px; font-size: 10px; }
+            .period-btn.compare { min-width: 80px; font-size: 10px; }
             .stats { gap: 4px; margin: 5px 0 3px; }
             .stat-item { padding: 4px 3px; border-radius: 6px; }
             .stat-item h3 { font-size: 7px; letter-spacing: 0.2px; margin-bottom: 1px; }
@@ -286,13 +286,13 @@
             .stat-item h3 { display: none; }
             .stat-item { padding: 4px 2px; }
             .period-btn { width: 54px; flex: 0 0 54px; font-size: 9px; padding: 7px 4px 6px; border-radius: 7px 7px 0 0; }
-            .period-btn.compare { min-width: 90px; font-size: 9px; }
+            .period-btn.compare { min-width: 72px; font-size: 9px; }
             .trend-arrow { font-size: 13px; }
         }
         @media (max-width: 900px) and (orientation: landscape) {
             .period-bar { gap: 3px; padding: 0 3px; }
             .period-btn { width: 75px; flex: 0 0 75px; font-size: 10px; padding: 8px 6px 7px; border-radius: 9px 9px 0 0; }
-            .period-btn.compare { min-width: 120px; font-size: 10px; }
+            .period-btn.compare { min-width: 95px; font-size: 10px; }
             .stats { gap: 4px; margin: 5px 0 3px; }
             .stat-item { padding: 4px 3px; }
             .stat-item h3 { font-size: 7px; margin-bottom: 1px; }
@@ -313,7 +313,7 @@
                 <button class="period-btn" data-period="6m">6 месяцев</button>
                 <button class="period-btn" data-period="3m">3 месяца</button>
                 <button class="period-btn" data-period="1m">1 месяц</button>
-                <button class="period-btn compare" id="compareBtn">Сравнение по годам</button>
+                <button class="period-btn compare" id="compareBtn">Сравнение</button>
             </div>
 
             <div class="stats">
@@ -742,8 +742,6 @@
         };
 
         // === Легенда диапазонов с равномерной сеткой ===
-        // Каждая колонка — фиксированной ширины (columnWidth = maxTextWidth + textGap + boxSize).
-        // Число центрируется в левой части колонки, квадратик — сразу за ним на textGap.
         const weightLegendPlugin = {
             id: 'weightLegend',
             afterDraw(chart) {
@@ -773,21 +771,19 @@
                 const isSmall = (chartArea.right - chartArea.left) < 480;
                 const fontPx = isSmall ? 9 : 10;
                 const boxSize = isSmall ? 8 : 9;
-                const textGap = isSmall ? 3 : 4;    // между числом и квадратиком
-                const itemGap = isSmall ? 8 : 10;   // между соседними колонками
+                const textGap = isSmall ? 3 : 4;
+                const itemGap = isSmall ? 8 : 10;
 
                 ctx.save();
                 ctx.font = `600 ${fontPx}px Inter, sans-serif`;
                 ctx.textBaseline = 'middle';
 
-                // Ширина самого длинного числа среди всех элементов
                 let maxTextW = 0;
                 items.forEach(it => {
                     const w = ctx.measureText(it.label).width;
                     if (w > maxTextW) maxTextW = w;
                 });
 
-                // Единая ширина колонки для всех
                 const columnWidth = maxTextW + textGap + boxSize;
                 const totalWidth = items.length * columnWidth + (items.length - 1) * itemGap;
 
@@ -796,12 +792,10 @@
                 items.forEach((it, i) => {
                     const colLeft = startX + i * (columnWidth + itemGap);
 
-                    // Число центрируется в «текстовой зоне» колонки
                     ctx.fillStyle = '#c8d8e8';
                     ctx.textAlign = 'center';
                     ctx.fillText(it.label, colLeft + maxTextW / 2, top + boxSize / 2 + 0.5);
 
-                    // Квадратик всегда на одном и том же месте относительно колонки
                     const bx = colLeft + maxTextW + textGap;
                     ctx.fillStyle = it.color;
                     roundRect(ctx, bx, top, boxSize, boxSize, 2);
