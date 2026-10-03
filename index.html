@@ -374,7 +374,6 @@
             '#4db8ff', '#f39c12', '#e74c3c', '#27ae60', '#9b59b6', '#00cec9', '#e67e22'
         ];
 
-        // === Цвета сеток ===
         const Y_GRID_COLOR      = 'rgba(255,255,255,0.10)';
         const START_LINE_COLOR  = 'rgba(255,255,255,0.25)';
         const MONTH_GRID_COLOR  = 'rgba(255,255,255,0.06)';
@@ -519,7 +518,6 @@
             return center - half;
         }
 
-        // === Плагины ===
         const yAxisLinePlugin = {
             id: 'yAxisLine',
             beforeDatasetsDraw(chart) {
@@ -741,7 +739,11 @@
             }
         };
 
-        // === Легенда диапазонов с равномерной сеткой ===
+        // === Легенда диапазонов с равномерными зазорами ===
+        // Каждая колонка фиксированной ширины: | textZone | gap | box |
+        // Числа выравниваются по ПРАВОМУ краю textZone — так правые края всех чисел
+        // совпадают по вертикали, а квадратики всегда стоят на одинаковом расстоянии gap
+        // от этого правого края.
         const weightLegendPlugin = {
             id: 'weightLegend',
             afterDraw(chart) {
@@ -771,19 +773,21 @@
                 const isSmall = (chartArea.right - chartArea.left) < 480;
                 const fontPx = isSmall ? 9 : 10;
                 const boxSize = isSmall ? 8 : 9;
-                const textGap = isSmall ? 3 : 4;
-                const itemGap = isSmall ? 8 : 10;
+                const textGap = isSmall ? 3 : 4;    // между числом и его квадратиком
+                const itemGap = isSmall ? 9 : 12;   // между соседними колонками
 
                 ctx.save();
                 ctx.font = `600 ${fontPx}px Inter, sans-serif`;
                 ctx.textBaseline = 'middle';
 
+                // Ширина самого длинного числа — общая для всех колонок
                 let maxTextW = 0;
                 items.forEach(it => {
                     const w = ctx.measureText(it.label).width;
                     if (w > maxTextW) maxTextW = w;
                 });
 
+                // Одна колонка: [maxTextW] [textGap] [boxSize]
                 const columnWidth = maxTextW + textGap + boxSize;
                 const totalWidth = items.length * columnWidth + (items.length - 1) * itemGap;
 
@@ -792,11 +796,15 @@
                 items.forEach((it, i) => {
                     const colLeft = startX + i * (columnWidth + itemGap);
 
+                    // 1. Число — выравниваем по правому краю текстовой зоны.
+                    //    Так у всех чисел правый край на одной вертикали.
+                    const textRight = colLeft + maxTextW;
                     ctx.fillStyle = '#c8d8e8';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(it.label, colLeft + maxTextW / 2, top + boxSize / 2 + 0.5);
+                    ctx.textAlign = 'right';
+                    ctx.fillText(it.label, textRight, top + boxSize / 2 + 0.5);
 
-                    const bx = colLeft + maxTextW + textGap;
+                    // 2. Квадратик — всегда на расстоянии textGap от правого края числа.
+                    const bx = textRight + textGap;
                     ctx.fillStyle = it.color;
                     roundRect(ctx, bx, top, boxSize, boxSize, 2);
                     ctx.fill();
