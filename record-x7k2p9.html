@@ -37,14 +37,15 @@
         .stats {
             display: grid;
             grid-template-columns: repeat(6, 1fr);
-            gap: 6px;
+            gap: 8px;
             margin: 0 0 10px;
             flex-shrink: 0;
             align-items: stretch;
         }
         .stat-item {
             background: linear-gradient(135deg, #1e2a3a 0%, #243447 100%);
-            padding: 4px 6px;
+            /* Высота плашек увеличена в 2 раза (padding 8px + 8px вместо 4px + 4px) */
+            padding: 8px 6px;
             border-radius: 10px;
             text-align: center;
             transition: transform 0.25s, box-shadow 0.25s;
@@ -66,8 +67,8 @@
             box-shadow: 0 6px 16px rgba(0,0,0,0.35);
         }
         .stat-item h3 {
-            margin: 0 0 2px;
-            font-size: 8px;
+            margin: 0 0 3px;
+            font-size: 9px;
             color: #8aa0b4;
             text-transform: uppercase;
             letter-spacing: 0.6px;
@@ -78,7 +79,7 @@
         }
         .stat-item p {
             margin: 0;
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 700;
             color: #4db8ff;
             white-space: nowrap;
@@ -93,10 +94,10 @@
         }
         .stat-item p small {
             display: block;
-            font-size: 8px;
+            font-size: 9px;
             font-weight: 500;
             color: #8aa0b4;
-            margin-top: 1px;
+            margin-top: 2px;
             white-space: nowrap;
             line-height: 1.1;
         }
@@ -134,7 +135,7 @@
             transform: scale(0.96);
         }
         .voice-btn .icon {
-            font-size: 22px;
+            font-size: 30px;
             line-height: 1;
         }
         .voice-btn.listening {
@@ -145,7 +146,7 @@
             background: #27ae60;
         }
         .voice-btn .result {
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 700;
             line-height: 1.1;
             white-space: normal;
@@ -154,14 +155,14 @@
         }
         .voice-btn .result small {
             display: block;
-            font-size: 8px;
+            font-size: 9px;
             font-weight: 500;
-            margin-top: 1px;
+            margin-top: 2px;
             opacity: 0.9;
         }
         @keyframes voicePulse {
             0%   { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
-            70%  { box-shadow: 0 0 0 12px rgba(231, 76, 60, 0); }
+            70%  { box-shadow: 0 0 0 16px rgba(231, 76, 60, 0); }
             100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
         }
 
@@ -274,43 +275,43 @@
 
         /* ============ АДАПТИВ ============ */
         @media (max-width: 1100px) {
-            .stat-item p { font-size: 13px; }
+            .stat-item p { font-size: 15px; }
         }
         @media (max-width: 900px) {
             .stats {
                 grid-template-columns: repeat(6, 1fr);
-                gap: 6px;
+                gap: 7px;
                 margin-bottom: 8px;
             }
-            .stat-item p { font-size: 12px; }
-            .stat-item h3 { font-size: 7px; }
-            .stat-item p small { font-size: 7px; }
-            .voice-btn .icon { font-size: 18px; }
+            .stat-item p { font-size: 14px; }
+            .stat-item h3 { font-size: 8px; }
+            .stat-item p small { font-size: 8px; }
+            .voice-btn .icon { font-size: 26px; }
         }
         @media (max-width: 600px) {
             body { padding: 6px; }
             .container { padding: 8px; border-radius: 12px; }
             .stats {
                 grid-template-columns: repeat(6, 1fr);
-                gap: 4px;
+                gap: 5px;
                 margin-bottom: 6px;
             }
-            .stat-item { padding: 3px 3px; border-radius: 8px; }
+            .stat-item { padding: 6px 3px; border-radius: 8px; }
             .stat-item h3 {
                 font-size: 7px;
                 letter-spacing: 0.3px;
-                margin-bottom: 1px;
+                margin-bottom: 2px;
             }
-            .stat-item p { font-size: 11px; }
+            .stat-item p { font-size: 12px; }
             .stat-item p small { font-size: 7px; }
             .voice-btn { border-radius: 8px; }
-            .voice-btn .icon { font-size: 16px; }
-            .voice-btn .result { font-size: 9px; }
+            .voice-btn .icon { font-size: 22px; }
+            .voice-btn .result { font-size: 10px; }
             .chart-container { padding: 4px; min-height: 200px; }
         }
         @media (max-width: 420px) {
             .stat-item h3 { display: none; }
-            .voice-btn .icon { font-size: 14px; }
+            .voice-btn .icon { font-size: 18px; }
         }
         @media (max-width: 900px) and (orientation: landscape) {
             .stats {
@@ -318,11 +319,11 @@
                 gap: 5px;
                 margin-bottom: 6px;
             }
-            .stat-item { padding: 3px 3px; }
+            .stat-item { padding: 6px 3px; }
             .stat-item h3 { font-size: 7px; margin-bottom: 1px; }
-            .stat-item p { font-size: 11px; }
+            .stat-item p { font-size: 12px; }
             .stat-item p small { font-size: 7px; }
-            .voice-btn .icon { font-size: 16px; }
+            .voice-btn .icon { font-size: 22px; }
             .chart-container { min-height: 180px; }
         }
     </style>
