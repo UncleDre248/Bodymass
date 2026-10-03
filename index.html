@@ -374,11 +374,15 @@
             '#4db8ff', '#f39c12', '#e74c3c', '#27ae60', '#9b59b6', '#00cec9', '#e67e22'
         ];
 
+        // Цвета сеток
         const Y_GRID_COLOR      = 'rgba(255,255,255,0.10)';
         const START_LINE_COLOR  = 'rgba(255,255,255,0.25)';
         const MONTH_GRID_COLOR  = 'rgba(255,255,255,0.06)';
         const MONTH_GRID_COLOR_COMPARE = 'rgba(255,255,255,0.08)';
         const YEAR_LINE_COLOR   = 'rgba(200,216,232,0.25)';
+
+        // Цвет линии тренда
+        const TREND_COLOR = '#FFD400';
 
         const V_AXIS_DATE = new Date(2024, 7, 1);
         const MAX_DATE = new Date(2026, 11, 31, 23, 59, 59);
@@ -518,6 +522,61 @@
             return center - half;
         }
 
+        // === Линейная регрессия (МНК) ===
+        // points: массив {x, y} в координатах данных
+        // Возвращает {a, b} для прямой y = a * x + b, или null, если точек мало
+        function linearRegression(points) {
+            if (!points || points.length < 2) return null;
+            let n = 0, sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+            points.forEach(p => {
+                if (p == null || !isFinite(p.x) || !isFinite(p.y)) return;
+                n++;
+                sumX += p.x;
+                sumY += p.y;
+                sumXY += p.x * p.y;
+                sumXX += p.x * p.x;
+            });
+            if (n < 2) return null;
+            const denom = n * sumXX - sumX * sumX;
+            if (Math.abs(denom) < 1e-12) return null;
+            const a = (n * sumXY - sumX * sumY) / denom;
+            const b = (sumY - a * sumX) / n;
+            return { a, b };
+        }
+
+        // === Плагин линии тренда ===
+        // chart._trendSegments — массив отрезков:
+        //   { x1, y1, x2, y2, color? } — в координатах данных.
+        // По умолчанию жёлтый. Для линий по годам может быть свой цвет.
+        const trendLinePlugin = {
+            id: 'trendLine',
+            afterDatasetsDraw(chart) {
+                if (!chart._trendSegments || chart._trendSegments.length === 0) return;
+                const { ctx, chartArea, scales } = chart;
+                if (!chartArea) return;
+
+                ctx.save();
+                ctx.setLineDash([6, 4]);
+                ctx.lineWidth = 2;
+                ctx.lineCap = 'round';
+                chart._trendSegments.forEach(seg => {
+                    const px1 = scales.x.getPixelForValue(seg.x1);
+                    const py1 = scales.y.getPixelForValue(seg.y1);
+                    const px2 = scales.x.getPixelForValue(seg.x2);
+                    const py2 = scales.y.getPixelForValue(seg.y2);
+                    // Пропускаем отрезки полностью вне области
+                    if (px2 < chartArea.left || px1 > chartArea.right) return;
+                    ctx.strokeStyle = seg.color || TREND_COLOR;
+                    ctx.beginPath();
+                    ctx.moveTo(px1, py1);
+                    ctx.lineTo(px2, py2);
+                    ctx.stroke();
+                });
+                ctx.restore();
+            }
+        };
+
+        // === Плагины сетки и подписей (без изменений) ===
         const yAxisLinePlugin = {
             id: 'yAxisLine',
             beforeDatasetsDraw(chart) {
@@ -739,11 +798,6 @@
             }
         };
 
-        // === Легенда диапазонов с равномерными зазорами ===
-        // Каждая колонка фиксированной ширины: | textZone | gap | box |
-        // Числа выравниваются по ПРАВОМУ краю textZone — так правые края всех чисел
-        // совпадают по вертикали, а квадратики всегда стоят на одинаковом расстоянии gap
-        // от этого правого края.
         const weightLegendPlugin = {
             id: 'weightLegend',
             afterDraw(chart) {
@@ -773,21 +827,19 @@
                 const isSmall = (chartArea.right - chartArea.left) < 480;
                 const fontPx = isSmall ? 9 : 10;
                 const boxSize = isSmall ? 8 : 9;
-                const textGap = isSmall ? 3 : 4;    // между числом и его квадратиком
-                const itemGap = isSmall ? 9 : 12;   // между соседними колонками
+                const textGap = isSmall ? 3 : 4;
+                const itemGap = isSmall ? 9 : 12;
 
                 ctx.save();
                 ctx.font = `600 ${fontPx}px Inter, sans-serif`;
                 ctx.textBaseline = 'middle';
 
-                // Ширина самого длинного числа — общая для всех колонок
                 let maxTextW = 0;
                 items.forEach(it => {
                     const w = ctx.measureText(it.label).width;
                     if (w > maxTextW) maxTextW = w;
                 });
 
-                // Одна колонка: [maxTextW] [textGap] [boxSize]
                 const columnWidth = maxTextW + textGap + boxSize;
                 const totalWidth = items.length * columnWidth + (items.length - 1) * itemGap;
 
@@ -795,15 +847,10 @@
 
                 items.forEach((it, i) => {
                     const colLeft = startX + i * (columnWidth + itemGap);
-
-                    // 1. Число — выравниваем по правому краю текстовой зоны.
-                    //    Так у всех чисел правый край на одной вертикали.
                     const textRight = colLeft + maxTextW;
                     ctx.fillStyle = '#c8d8e8';
                     ctx.textAlign = 'right';
                     ctx.fillText(it.label, textRight, top + boxSize / 2 + 0.5);
-
-                    // 2. Квадратик — всегда на расстоянии textGap от правого края числа.
                     const bx = textRight + textGap;
                     ctx.fillStyle = it.color;
                     roundRect(ctx, bx, top, boxSize, boxSize, 2);
@@ -1010,7 +1057,7 @@
                 });
             });
 
-            return { datasets, years };
+            return { datasets, years, byYear };
         }
 
         function createNormalChart(entries) {
@@ -1034,7 +1081,7 @@
 
             chart = new Chart(ctx, {
                 type: 'bar',
-                plugins: [monthGridPlugin, yAxisLinePlugin, yearLinesPlugin, minMaxLinesPlugin, monthLabelsPlugin, yearLabelsPlugin, weightLegendPlugin],
+                plugins: [monthGridPlugin, yAxisLinePlugin, yearLinesPlugin, minMaxLinesPlugin, monthLabelsPlugin, yearLabelsPlugin, weightLegendPlugin, trendLinePlugin],
                 data: {
                     labels: labels,
                     datasets: [{
@@ -1108,6 +1155,27 @@
             chart._showWeightLegend = true;
             chart._legendWeights = entries.map(e => e.weight);
 
+            // === Линия тренда по реальным замерам ===
+            const trendPoints = [];
+            entries.forEach(e => {
+                const d = new Date(e.date);
+                d.setHours(0, 0, 0, 0);
+                const dayIndex = Math.round((d - new Date(entries[0].date)) / 86400000);
+                trendPoints.push({ x: dayIndex, y: e.weight });
+            });
+            const reg = linearRegression(trendPoints);
+            chart._trendSegments = [];
+            if (reg && trendPoints.length >= 2) {
+                const lastIdx = trendPoints[trendPoints.length - 1].x;
+                chart._trendSegments.push({
+                    x1: 0,
+                    y1: reg.b,
+                    x2: lastIdx,
+                    y2: reg.a * lastIdx + reg.b,
+                    color: TREND_COLOR
+                });
+            }
+
             setTimeout(() => {
                 if (!chart) return;
                 const area = chart.chartArea;
@@ -1133,7 +1201,7 @@
         function createCompareChart(entries) {
             if (chart) { chart.destroy(); chart = null; }
             const ctx = document.getElementById('weightChart').getContext('2d');
-            const { datasets } = buildCompareChartData(entries);
+            const { datasets, years, byYear } = buildCompareChartData(entries);
 
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
@@ -1170,7 +1238,7 @@
 
             chart = new Chart(ctx, {
                 type: 'line',
-                plugins: [compareMonthGridPlugin, compareMonthLabelsPlugin],
+                plugins: [compareMonthGridPlugin, compareMonthLabelsPlugin, trendLinePlugin],
                 data: { datasets },
                 options: {
                     responsive: true,
@@ -1243,6 +1311,45 @@
             });
 
             chart._compareMode = true;
+
+            // === Линия тренда по каждому году + общая жёлтая линия ===
+            chart._trendSegments = [];
+
+            // 1. Общая жёлтая линия тренда по всем данным
+            const allPoints = [];
+            entries.forEach(e => {
+                const y = e.date.getFullYear();
+                const startOfYear = new Date(y, 0, 1);
+                const dayOfYear = Math.floor((e.date - startOfYear) / 86400000) + 1;
+                // x = "день в году + смещение по годам", чтобы годы не накладывались
+                // Для общей линии используем непрерывную шкалу дней от первой даты
+                allPoints.push({ x: Math.floor((e.date - entries[0].date) / 86400000), y: e.weight });
+            });
+            const regAll = linearRegression(allPoints);
+            // Для общей линии на диаграмме сравнения не имеет смысла показывать,
+            // потому что каждый год рисуется в своих координатах 1..365.
+            // Вместо этого сделаем линию тренда по каждому году отдельно, в цвете года.
+
+            // 2. Линия тренда для каждого года — в цвете года, пунктирная
+            years.forEach(year => {
+                const yearEntries = byYear[year];
+                if (!yearEntries || yearEntries.length < 2) return;
+                const pts = yearEntries.map(e => {
+                    const startOfYear = new Date(year, 0, 1);
+                    const dayOfYear = Math.floor((e.date - startOfYear) / 86400000) + 1;
+                    return { x: dayOfYear, y: e.weight };
+                });
+                pts.sort((a, b) => a.x - b.x);
+                const reg = linearRegression(pts);
+                if (!reg) return;
+                const x1 = pts[0].x;
+                const x2 = pts[pts.length - 1].x;
+                chart._trendSegments.push({
+                    x1, y1: reg.a * x1 + reg.b,
+                    x2, y2: reg.a * x2 + reg.b,
+                    color: TREND_COLOR // жёлтый — как в ТЗ
+                });
+            });
 
             setTimeout(() => {
                 if (!chart) return;
