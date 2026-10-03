@@ -36,19 +36,25 @@
         .stats {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
-            margin: 0 0 10px;
+            gap: 8px;
+            margin: 0 0 8px;
             flex-shrink: 0;
+            align-items: stretch;
         }
         .stat-item {
             background: linear-gradient(135deg, #1e2a3a 0%, #243447 100%);
-            padding: 7px 8px;
+            padding: 8px 6px;
             border-radius: 10px;
             text-align: center;
             transition: transform 0.25s, box-shadow 0.25s;
             opacity: 0;
             animation: fadeInUp 0.5s forwards;
             min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
         }
         .stat-item:nth-child(1) { animation-delay: 0.05s; }
         .stat-item:nth-child(2) { animation-delay: 0.10s; }
@@ -56,15 +62,15 @@
         .stat-item:nth-child(4) { animation-delay: 0.20s; }
         .stat-item:nth-child(5) { animation-delay: 0.25s; }
         .stat-item:hover {
-            transform: translateY(-3px);
+            transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(0,0,0,0.35);
         }
         .stat-item h3 {
-            margin: 0 0 4px;
-            font-size: 10px;
+            margin: 0 0 3px;
+            font-size: 9px;
             color: #8aa0b4;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.6px;
             font-weight: 600;
             white-space: nowrap;
             overflow: hidden;
@@ -72,10 +78,11 @@
         }
         .stat-item p {
             margin: 0;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
             color: #4db8ff;
             white-space: nowrap;
+            line-height: 1.1;
         }
         .stat-item p.positive { color: #e74c3c; }
         .stat-item p.negative { color: #27ae60; }
@@ -86,12 +93,66 @@
         }
         .stat-item p small {
             display: block;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 500;
             color: #8aa0b4;
             margin-top: 2px;
             white-space: nowrap;
+            line-height: 1.1;
         }
+        /* Стрелка рядом со значением текущей массы */
+        .trend-arrow {
+            font-size: 14px;
+            margin-left: 4px;
+            font-weight: 700;
+            vertical-align: middle;
+        }
+        .trend-up { color: #e74c3c; }
+        .trend-down { color: #27ae60; }
+        .trend-same { color: #8aa0b4; }
+
+        /* ============ ПЕРЕКЛЮЧАТЕЛЬ ПЕРИОДА ============ */
+        .period-bar {
+            display: flex;
+            gap: 6px;
+            margin: 0 0 8px;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+            align-items: center;
+        }
+        .period-btn {
+            background: #1e2a3a;
+            color: #c8d8e8;
+            border: 1px solid #2c3a4f;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            white-space: nowrap;
+            user-select: none;
+        }
+        .period-btn:hover {
+            background: #243447;
+        }
+        .period-btn.active {
+            background: #4db8ff;
+            color: #001236;
+            border-color: #4db8ff;
+        }
+        /* Кнопка "Сравнение по годам" — отдельного цвета, чтобы не путалась с периодами */
+        .period-btn.compare {
+            margin-left: auto;
+            background: #2c3a4f;
+            color: #e8eef5;
+            border-color: #4db8ff;
+        }
+        .period-btn.compare.active {
+            background: #4db8ff;
+            color: #001236;
+        }
+
         .chart-container {
             position: relative;
             width: 100%;
@@ -127,44 +188,51 @@
 
         /* ============ АДАПТИВ ============ */
         @media (max-width: 1100px) {
-            .stat-item p { font-size: 17px; }
+            .stat-item p { font-size: 15px; }
         }
         @media (max-width: 900px) {
             .stats {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 8px;
-                margin-bottom: 8px;
+                grid-template-columns: repeat(5, 1fr);
+                gap: 7px;
+                margin-bottom: 6px;
             }
-            .stat-item p { font-size: 17px; }
+            .stat-item p { font-size: 14px; }
+            .stat-item h3 { font-size: 8px; }
+            .stat-item p small { font-size: 8px; }
+            .period-btn { padding: 5px 9px; font-size: 11px; }
         }
         @media (max-width: 600px) {
             body { padding: 6px; }
             .container { padding: 8px; border-radius: 12px; }
             .stats {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 6px;
+                grid-template-columns: repeat(5, 1fr);
+                gap: 5px;
                 margin-bottom: 6px;
             }
-            .stat-item { padding: 6px 6px; border-radius: 8px; }
-            .stat-item h3 {
-                font-size: 9px;
-                letter-spacing: 0.5px;
-                margin-bottom: 3px;
-            }
-            .stat-item p { font-size: 15px; }
-            .stat-item p small { font-size: 9px; }
+            .stat-item { padding: 6px 3px; border-radius: 8px; }
+            .stat-item h3 { font-size: 7px; letter-spacing: 0.3px; margin-bottom: 2px; }
+            .stat-item p { font-size: 12px; }
+            .stat-item p small { font-size: 7px; }
+            .trend-arrow { font-size: 11px; margin-left: 2px; }
+            .period-bar { gap: 4px; margin-bottom: 5px; }
+            .period-btn { padding: 4px 7px; font-size: 10px; border-radius: 6px; }
             .chart-container { padding: 4px; min-height: 200px; }
+        }
+        @media (max-width: 420px) {
+            .stat-item h3 { display: none; }
+            .period-btn.compare { margin-left: 0; }
         }
         @media (max-width: 900px) and (orientation: landscape) {
             .stats {
                 grid-template-columns: repeat(5, 1fr);
                 gap: 5px;
-                margin-bottom: 6px;
+                margin-bottom: 4px;
             }
-            .stat-item { padding: 4px 3px; }
-            .stat-item h3 { font-size: 8px; margin-bottom: 1px; }
-            .stat-item p { font-size: 13px; }
-            .stat-item p small { font-size: 8px; }
+            .stat-item { padding: 5px 3px; }
+            .stat-item h3 { font-size: 7px; margin-bottom: 1px; }
+            .stat-item p { font-size: 12px; }
+            .stat-item p small { font-size: 7px; }
+            .period-btn { padding: 4px 8px; font-size: 10px; }
             .chart-container { min-height: 180px; }
         }
     </style>
@@ -197,6 +265,17 @@
                     <p id="swingValue">--</p>
                 </div>
             </div>
+
+            <!-- Панель периодов -->
+            <div class="period-bar" id="periodBar">
+                <button class="period-btn" data-period="1m">1 месяц</button>
+                <button class="period-btn" data-period="3m">3 месяца</button>
+                <button class="period-btn" data-period="6m">6 месяцев</button>
+                <button class="period-btn" data-period="1y">1 год</button>
+                <button class="period-btn active" data-period="all">Всё время</button>
+                <button class="period-btn compare" id="compareBtn" title="Наложить графики по годам">📅 Сравнение по годам</button>
+            </div>
+
             <div class="chart-container" id="chartContainer">
                 <canvas id="weightChart"></canvas>
             </div>
@@ -210,6 +289,10 @@
             'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн',
             'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'
         ];
+        const MONTHS_RU_FULL = [
+            'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+            'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+        ];
 
         const RANGE_COLORS = {
             69: '#1F9E1F',
@@ -222,7 +305,24 @@
             76: '#B20000'
         };
 
-        const V_AXIS_DATE = new Date(2024, 7, 1); // 01.08.2024
+        // Палитра для линий сравнения по годам
+        const YEAR_COLORS = [
+            '#4db8ff', // 2024
+            '#f39c12', // 2025
+            '#e74c3c', // 2026
+            '#27ae60', // 2027
+            '#9b59b6', // 2028
+            '#00cec9', // 2029
+            '#e67e22'  // 2030
+        ];
+
+        const V_AXIS_DATE = new Date(2024, 7, 1);
+
+        // Глобальные данные
+        let ALL_ENTRIES = [];      // [{date: Date, weight: Number}, ...]
+        let CURRENT_PERIOD = 'all'; // '1m' | '3m' | '6m' | '1y' | 'all'
+        let COMPARE_MODE = false;   // сравнение по годам
+        let chart = null;
 
         function colorForWeight(w) {
             const key = Math.floor(w);
@@ -244,11 +344,9 @@
             let row = [];
             let cell = '';
             let inQuotes = false;
-
             for (let i = 0; i < text.length; i++) {
                 const ch = text[i];
                 const next = text[i + 1];
-
                 if (inQuotes) {
                     if (ch === '"' && next === '"') { cell += '"'; i++; }
                     else if (ch === '"') { inQuotes = false; }
@@ -265,10 +363,7 @@
                     } else { cell += ch; }
                 }
             }
-            if (cell.length > 0 || row.length > 0) {
-                row.push(cell);
-                rows.push(row);
-            }
+            if (cell.length > 0 || row.length > 0) { row.push(cell); rows.push(row); }
             return rows.filter(r => r.some(c => c.trim() !== ''));
         }
 
@@ -293,18 +388,19 @@
             ctx.closePath();
         }
 
+        // ============================================================
+        //  Плагины для обычного (гистограмма) режима
+        // ============================================================
         const yAxisLinePlugin = {
             id: 'yAxisLine',
             beforeDatasetsDraw(chart) {
+                if (chart._compareMode) return;
                 const { ctx, chartArea, scales } = chart;
                 if (!chartArea) return;
                 if (chart._vAxisIndex == null) return;
-
                 const xScale = scales.x;
                 const x = xScale.getPixelForValue(chart._vAxisIndex);
-
                 if (x < chartArea.left || x > chartArea.right) return;
-
                 ctx.save();
                 ctx.beginPath();
                 ctx.lineWidth = 1;
@@ -319,16 +415,15 @@
         const yearLinesPlugin = {
             id: 'yearLines',
             beforeDatasetsDraw(chart) {
+                if (chart._compareMode) return;
                 const { ctx, chartArea, scales } = chart;
                 if (!chartArea) return;
                 if (!chart._jan1Indices || chart._jan1Indices.length === 0) return;
-
                 const xScale = scales.x;
                 ctx.save();
                 ctx.setLineDash([]);
                 ctx.lineWidth = 1;
                 ctx.strokeStyle = 'rgba(200, 216, 232, 0.25)';
-
                 chart._jan1Indices.forEach(idx => {
                     const x = xScale.getPixelForValue(idx);
                     if (x >= chartArea.left && x <= chartArea.right) {
@@ -345,70 +440,58 @@
         const minMaxLinesPlugin = {
             id: 'minMaxLines',
             afterDatasetsDraw(chart) {
+                if (chart._compareMode) return;
                 const { ctx, chartArea, scales } = chart;
                 if (!chartArea) return;
                 if (chart._maxWeight == null || chart._minWeight == null) return;
-
                 const yScale = scales.y;
                 const yMax = yScale.getPixelForValue(chart._maxWeight);
                 const yMin = yScale.getPixelForValue(chart._minWeight);
-
                 ctx.save();
                 ctx.setLineDash([3, 3]);
                 ctx.lineWidth = 1.5;
-
                 ctx.strokeStyle = hexToRgba(colorForWeight(chart._maxWeight), 0.5);
                 ctx.beginPath();
                 ctx.moveTo(chartArea.left, yMax);
                 ctx.lineTo(chartArea.right, yMax);
                 ctx.stroke();
-
                 ctx.strokeStyle = hexToRgba(colorForWeight(chart._minWeight), 0.5);
                 ctx.beginPath();
                 ctx.moveTo(chartArea.left, yMin);
                 ctx.lineTo(chartArea.right, yMin);
                 ctx.stroke();
-
                 ctx.restore();
             },
             afterDraw(chart) {
+                if (chart._compareMode) return;
                 const { ctx, chartArea, scales } = chart;
                 if (!chartArea) return;
                 if (chart._maxWeight == null || chart._minWeight == null) return;
-
                 const yScale = scales.y;
                 const chartWidth = chartArea.right - chartArea.left;
                 const isSmall = chartWidth < 400;
-
                 const fontPx = isSmall ? 8 : 10;
                 const pw0 = isSmall ? 8 : 10;
                 const ph = isSmall ? 9.5 : 11;
-
                 const drawBadge = (weight, color) => {
                     const y = yScale.getPixelForValue(weight);
                     const x = chartArea.left - 4;
-
                     ctx.save();
                     ctx.font = `bold ${fontPx}px Inter, sans-serif`;
                     const text = weight.toFixed(1);
                     const tw = ctx.measureText(text).width;
                     const pw = tw + pw0;
-
                     const bx = x - pw - 2;
                     const by = y - ph / 2;
-
                     ctx.fillStyle = color;
                     roundRect(ctx, bx, by, pw, ph, 3);
                     ctx.fill();
-
                     ctx.fillStyle = '#001236';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(text, bx + pw / 2, by + ph / 2 + 0.5);
-
                     ctx.restore();
                 };
-
                 drawBadge(chart._maxWeight, colorForWeight(chart._maxWeight));
                 drawBadge(chart._minWeight, colorForWeight(chart._minWeight));
             }
@@ -417,29 +500,27 @@
         const monthLabelsPlugin = {
             id: 'monthLabels',
             afterDraw(chart) {
+                if (chart._compareMode) {
+                    // В режиме сравнения свои подписи — рисуются отдельно ниже
+                    return;
+                }
                 const { ctx, chartArea, scales } = chart;
                 if (!chartArea) return;
                 if (!chart._monthSegments || chart._monthSegments.length === 0) return;
-
                 const xScale = scales.x;
                 const chartWidth = chartArea.right - chartArea.left;
                 const isSmall = chartWidth < 400;
-
                 const fontPx = isSmall ? 8 : 10;
                 const offset = isSmall ? 6 : 8;
-
                 ctx.save();
                 ctx.font = `bold ${fontPx}px Inter, sans-serif`;
                 ctx.fillStyle = 'rgba(200, 216, 232, 0.75)';
-
                 chart._monthSegments.forEach(seg => {
                     const xStart = xScale.getPixelForValue(seg.startIdx);
                     const xEnd   = xScale.getPixelForValue(seg.endIdx);
                     const xCenter = (xStart + xEnd) / 2;
-
                     if (xCenter >= chartArea.left && xCenter <= chartArea.right) {
                         const label = MONTHS_RU[seg.month];
-
                         ctx.save();
                         ctx.translate(xCenter, chartArea.bottom + offset);
                         ctx.rotate(-Math.PI / 2);
@@ -449,7 +530,6 @@
                         ctx.restore();
                     }
                 });
-
                 ctx.restore();
             }
         };
@@ -457,41 +537,475 @@
         const yearLabelsPlugin = {
             id: 'yearLabels',
             afterDraw(chart) {
+                if (chart._compareMode) return;
                 const { ctx, chartArea, scales } = chart;
                 if (!chartArea) return;
                 if (!chart._yearSegments || chart._yearSegments.length === 0) return;
-
                 const xScale = scales.x;
                 const chartWidth = chartArea.right - chartArea.left;
                 const isSmall = chartWidth < 400;
-
                 const fontPx = isSmall ? 9 : 11;
                 const offset = isSmall ? 38 : 42;
-
                 ctx.save();
                 ctx.font = `bold ${fontPx}px Inter, sans-serif`;
                 ctx.fillStyle = 'rgba(200, 216, 232, 0.55)';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'top';
-
                 const y = chartArea.bottom + offset;
-
                 chart._yearSegments.forEach(seg => {
                     const xStart = xScale.getPixelForValue(seg.startIdx);
                     const xEnd   = xScale.getPixelForValue(seg.endIdx);
                     const xCenter = (xStart + xEnd) / 2;
-
                     if (xCenter >= chartArea.left && xCenter <= chartArea.right) {
                         ctx.fillText(seg.year, xCenter, y);
                     }
                 });
-
                 ctx.restore();
             }
         };
 
-        let chart = null;
+        // Плагин для режима сравнения: подписи месяцев под осью
+        const compareMonthLabelsPlugin = {
+            id: 'compareMonthLabels',
+            afterDraw(chart) {
+                if (!chart._compareMode) return;
+                const { ctx, chartArea, scales } = chart;
+                if (!chartArea) return;
+                const xScale = scales.x;
+                const chartWidth = chartArea.right - chartArea.left;
+                const isSmall = chartWidth < 400;
+                const fontPx = isSmall ? 9 : 11;
 
+                ctx.save();
+                ctx.font = `bold ${fontPx}px Inter, sans-serif`;
+                ctx.fillStyle = 'rgba(200, 216, 232, 0.75)';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                const y = chartArea.bottom + 6;
+
+                // 12 месяцев — равномерно по оси X (0...11)
+                for (let m = 0; m < 12; m++) {
+                    const x = xScale.getPixelForValue(m);
+                    if (x >= chartArea.left && x <= chartArea.right) {
+                        ctx.fillText(MONTHS_RU[m], x, y);
+                    }
+                }
+                ctx.restore();
+            }
+        };
+
+        // ============================================================
+        //  Фильтрация данных по периоду
+        // ============================================================
+        function filterByPeriod(entries, period) {
+            if (period === 'all' || entries.length === 0) return entries.slice();
+
+            const lastDate = entries[entries.length - 1].date;
+            const from = new Date(lastDate);
+
+            if (period === '1m') from.setMonth(from.getMonth() - 1);
+            else if (period === '3m') from.setMonth(from.getMonth() - 3);
+            else if (period === '6m') from.setMonth(from.getMonth() - 6);
+            else if (period === '1y') from.setFullYear(from.getFullYear() - 1);
+
+            return entries.filter(e => e.date >= from);
+        }
+
+        // ============================================================
+        //  Обновление статистики
+        // ============================================================
+        function updateStats(entries) {
+            const currentEl = document.getElementById('currentWeight');
+            const changeEl = document.getElementById('totalChange');
+            const maxEl = document.getElementById('maxWeight');
+            const minEl = document.getElementById('minWeight');
+            const swingEl = document.getElementById('swingValue');
+
+            if (entries.length === 0) {
+                currentEl.textContent = '--';
+                changeEl.textContent = '--';
+                maxEl.textContent = '--';
+                minEl.textContent = '--';
+                swingEl.textContent = '--';
+                return;
+            }
+
+            const lastEntry = entries[entries.length - 1];
+            const prevEntry = entries.length > 1 ? entries[entries.length - 2] : null;
+            const firstEntry = entries[0];
+
+            // Текущая масса + стрелка изменения к предыдущему измерению
+            let arrow = '';
+            if (prevEntry) {
+                const diff = lastEntry.weight - prevEntry.weight;
+                if (Math.abs(diff) < 0.05) {
+                    arrow = '<span class="trend-arrow trend-same">→</span>';
+                } else if (diff > 0) {
+                    arrow = '<span class="trend-arrow trend-up">↑</span>';
+                } else {
+                    arrow = '<span class="trend-arrow trend-down">↓</span>';
+                }
+            }
+            currentEl.innerHTML = lastEntry.weight.toFixed(1) + ' кг' + arrow +
+                '<small>' + formatDateShort(lastEntry.date) + '</small>';
+            currentEl.style.color = colorForWeight(lastEntry.weight);
+
+            // Изменение за период
+            const change = lastEntry.weight - firstEntry.weight;
+            const sign = change > 0 ? '+' : '';
+            const range = formatDateShort(firstEntry.date) + ' → ' + formatDateShort(lastEntry.date);
+            changeEl.innerHTML = sign + change.toFixed(1) + ' кг<small>' + range + '</small>';
+
+            // Максимум и минимум
+            let maxW = -Infinity, minW = Infinity;
+            let maxD = null, minD = null;
+            entries.forEach(e => {
+                if (e.weight > maxW) { maxW = e.weight; maxD = e.date; }
+                if (e.weight < minW) { minW = e.weight; minD = e.date; }
+            });
+            maxEl.innerHTML = maxW.toFixed(1) + ' кг<small>' + formatDateShort(maxD) + '</small>';
+            maxEl.style.color = colorForWeight(maxW);
+            minEl.innerHTML = minW.toFixed(1) + ' кг<small>' + formatDateShort(minD) + '</small>';
+            minEl.style.color = colorForWeight(minW);
+
+            // Колебание
+            const swing = maxW - minW;
+            const swingRange = minW.toFixed(1) + ' → ' + maxW.toFixed(1);
+            swingEl.innerHTML = swing.toFixed(1) + ' кг<small>' + swingRange + '</small>';
+        }
+
+        // ============================================================
+        //  Обычный режим: гистограмма по дням (как было)
+        // ============================================================
+        function buildNormalChartData(entries) {
+            if (entries.length === 0) {
+                return { labels: [], weights: [], jan1Indices: [], yearSegments: [], monthSegments: [], vAxisIndex: 0 };
+            }
+            const firstDate = new Date(entries[0].date);
+            firstDate.setHours(0, 0, 0, 0);
+            const lastDate = new Date(entries[entries.length - 1].date);
+            lastDate.setHours(0, 0, 0, 0);
+
+            const byDay = {};
+            entries.forEach(e => {
+                const d = new Date(e.date);
+                d.setHours(0, 0, 0, 0);
+                byDay[d.toISOString().slice(0, 10)] = e.weight;
+            });
+
+            const labels = [];
+            const weights = [];
+            const dates = [];
+            const jan1Indices = [];
+
+            let idx = 0;
+            for (let d = new Date(firstDate); d <= lastDate; d.setDate(d.getDate() + 1)) {
+                const key = d.toISOString().slice(0, 10);
+                labels.push(formatDateShort(d));
+                dates.push(new Date(d));
+                weights.push(byDay[key] !== undefined ? byDay[key] : 0);
+                if (d.getMonth() === 0 && d.getDate() === 1) jan1Indices.push(idx);
+                idx++;
+            }
+
+            let vAxisIndex = -1;
+            for (let i = 0; i < dates.length; i++) {
+                if (dates[i] >= V_AXIS_DATE) { vAxisIndex = i; break; }
+            }
+            if (vAxisIndex === -1) vAxisIndex = 0;
+
+            const yearSegments = [];
+            let curYear = null, startIdx = 0;
+            for (let i = 0; i < dates.length; i++) {
+                const y = dates[i].getFullYear();
+                if (curYear === null) { curYear = y; startIdx = i; }
+                else if (y !== curYear) {
+                    yearSegments.push({ year: curYear, startIdx: startIdx, endIdx: i - 1 });
+                    curYear = y;
+                    startIdx = i;
+                }
+            }
+            if (curYear !== null) yearSegments.push({ year: curYear, startIdx: startIdx, endIdx: dates.length - 1 });
+
+            const monthSegments = [];
+            let curMonthKey = null, mStartIdx = 0;
+            for (let i = 0; i < dates.length; i++) {
+                const d = dates[i];
+                const key = d.getFullYear() * 100 + d.getMonth();
+                if (curMonthKey === null) { curMonthKey = key; mStartIdx = i; }
+                else if (key !== curMonthKey) {
+                    monthSegments.push({
+                        year: dates[mStartIdx].getFullYear(),
+                        month: dates[mStartIdx].getMonth(),
+                        startIdx: mStartIdx,
+                        endIdx: i - 1
+                    });
+                    curMonthKey = key;
+                    mStartIdx = i;
+                }
+            }
+            if (curMonthKey !== null) {
+                monthSegments.push({
+                    year: dates[mStartIdx].getFullYear(),
+                    month: dates[mStartIdx].getMonth(),
+                    startIdx: mStartIdx,
+                    endIdx: dates.length - 1
+                });
+            }
+
+            return { labels, weights, jan1Indices, yearSegments, monthSegments, vAxisIndex };
+        }
+
+        // ============================================================
+        //  Режим сравнения: линии по годам, X = день года (1..366)
+        // ============================================================
+        function buildCompareChartData(entries) {
+            // Группируем записи по годам
+            const byYear = {};
+            entries.forEach(e => {
+                const y = e.date.getFullYear();
+                if (!byYear[y]) byYear[y] = [];
+                byYear[y].push(e);
+            });
+
+            const years = Object.keys(byYear).map(Number).sort();
+            const datasets = [];
+
+            years.forEach((year, i) => {
+                const color = YEAR_COLORS[i % YEAR_COLORS.length];
+                const points = byYear[year].map(e => {
+                    const startOfYear = new Date(year, 0, 1);
+                    const dayOfYear = Math.floor((e.date - startOfYear) / 86400000) + 1;
+                    return { x: dayOfYear, y: e.weight };
+                });
+                points.sort((a, b) => a.x - b.x);
+                datasets.push({
+                    label: String(year),
+                    data: points,
+                    borderColor: color,
+                    backgroundColor: hexToRgba(color, 0.1),
+                    borderWidth: 2,
+                    pointRadius: 2,
+                    pointHoverRadius: 5,
+                    tension: 0.25,
+                    fill: false,
+                    parsing: false
+                });
+            });
+
+            return { datasets, years };
+        }
+
+        // ============================================================
+        //  Создание графика (обычный режим)
+        // ============================================================
+        function createNormalChart(entries) {
+            if (chart) { chart.destroy(); chart = null; }
+            const ctx = document.getElementById('weightChart').getContext('2d');
+            const { labels, weights, jan1Indices, yearSegments, monthSegments, vAxisIndex } = buildNormalChartData(entries);
+            const barColors = weights.map(w => w > 0 ? colorForWeight(w) : 'transparent');
+
+            const isSmall = window.innerWidth < 600;
+            const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
+            const padTop = isLandscapePhone ? 6 : (isSmall ? 8 : 10);
+            const padBottom = isLandscapePhone ? 60 : (isSmall ? 65 : 70);
+            const padLeft = 12;
+            const padRight = 12;
+            const Y_AXIS_SHIFT = 8;
+
+            chart = new Chart(ctx, {
+                type: 'bar',
+                plugins: [yAxisLinePlugin, yearLinesPlugin, minMaxLinesPlugin, monthLabelsPlugin, yearLabelsPlugin],
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Масса тела (кг)',
+                        data: weights,
+                        backgroundColor: barColors,
+                        borderColor: barColors,
+                        borderWidth: 0,
+                        borderRadius: 2,
+                        barPercentage: 1.0,
+                        categoryPercentage: 1.0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 500, easing: 'easeOutQuart' },
+                    interaction: { mode: 'index', intersect: false },
+                    layout: { padding: { top: padTop, bottom: padBottom, left: padLeft, right: padRight } },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(44, 62, 80, 0.95)',
+                            titleFont: { size: 11 },
+                            bodyFont: { size: 12 },
+                            padding: 10,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    const v = context.parsed.y;
+                                    if (v === 0) return 'Нет данных (0 кг)';
+                                    return 'Масса: ' + v.toFixed(1) + ' кг';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 69, max: 76,
+                            title: {
+                                display: true,
+                                text: 'Масса тела (кг)',
+                                color: '#c8d8e8',
+                                font: { size: 10 },
+                                padding: { top: 0, bottom: 4 }
+                            },
+                            grid: { color: 'rgba(255,255,255,0.10)' },
+                            ticks: {
+                                color: '#c8d8e8',
+                                stepSize: 1,
+                                font: { size: 10 },
+                                padding: 4
+                            },
+                            afterFit(scale) { scale.width += Y_AXIS_SHIFT; }
+                        },
+                        x: {
+                            title: { display: false },
+                            grid: { display: false },
+                            ticks: { display: false, autoSkip: false, maxRotation: 0, minRotation: 0 }
+                        }
+                    }
+                }
+            });
+
+            chart._compareMode = false;
+            chart._jan1Indices = jan1Indices;
+            chart._yearSegments = yearSegments;
+            chart._monthSegments = monthSegments;
+            chart._vAxisIndex = vAxisIndex;
+
+            // Для плагина max/min линий
+            let maxW = null, minW = null;
+            entries.forEach(e => {
+                if (maxW === null || e.weight > maxW) maxW = e.weight;
+                if (minW === null || e.weight < minW) minW = e.weight;
+            });
+            chart._maxWeight = maxW;
+            chart._minWeight = minW;
+
+            window.weightChartInstance = chart;
+        }
+
+        // ============================================================
+        //  Создание графика (режим сравнения по годам)
+        // ============================================================
+        function createCompareChart(entries) {
+            if (chart) { chart.destroy(); chart = null; }
+            const ctx = document.getElementById('weightChart').getContext('2d');
+            const { datasets } = buildCompareChartData(entries);
+
+            const isSmall = window.innerWidth < 600;
+            const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
+            const padTop = isLandscapePhone ? 6 : (isSmall ? 8 : 10);
+            const padBottom = isLandscapePhone ? 30 : (isSmall ? 35 : 40);
+            const padLeft = 12;
+            const padRight = 12;
+            const Y_AXIS_SHIFT = 8;
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                plugins: [compareMonthLabelsPlugin],
+                data: { datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 500, easing: 'easeOutQuart' },
+                    interaction: { mode: 'nearest', intersect: false },
+                    layout: { padding: { top: padTop, bottom: padBottom, left: padLeft, right: padRight } },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                color: '#e8eef5',
+                                font: { size: 11 },
+                                boxWidth: 12,
+                                boxHeight: 12,
+                                padding: 8
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(44, 62, 80, 0.95)',
+                            titleFont: { size: 11 },
+                            bodyFont: { size: 12 },
+                            padding: 10,
+                            cornerRadius: 8,
+                            callbacks: {
+                                title: function(items) {
+                                    if (!items.length) return '';
+                                    const dayOfYear = items[0].parsed.x;
+                                    const d = new Date(2024, 0, dayOfYear); // 2024 — високосный, подходит для 1..366
+                                    return d.getDate() + ' ' + MONTHS_RU_FULL[d.getMonth()].toLowerCase();
+                                },
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + ' кг';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 69, max: 76,
+                            title: {
+                                display: true,
+                                text: 'Масса тела (кг)',
+                                color: '#c8d8e8',
+                                font: { size: 10 },
+                                padding: { top: 0, bottom: 4 }
+                            },
+                            grid: { color: 'rgba(255,255,255,0.10)' },
+                            ticks: {
+                                color: '#c8d8e8',
+                                stepSize: 1,
+                                font: { size: 10 },
+                                padding: 4
+                            },
+                            afterFit(scale) { scale.width += Y_AXIS_SHIFT; }
+                        },
+                        x: {
+                            type: 'linear',
+                            min: 1,
+                            max: 366,
+                            title: { display: false },
+                            grid: { display: false },
+                            ticks: { display: false }
+                        }
+                    }
+                }
+            });
+
+            chart._compareMode = true;
+            window.weightChartInstance = chart;
+        }
+
+        // ============================================================
+        //  Перерисовка
+        // ============================================================
+        function redraw() {
+            const filtered = filterByPeriod(ALL_ENTRIES, CURRENT_PERIOD);
+            updateStats(filtered);
+            if (COMPARE_MODE) {
+                createCompareChart(filtered);
+            } else {
+                createNormalChart(filtered);
+            }
+        }
+
+        // ============================================================
+        //  Загрузка данных
+        // ============================================================
         async function loadData() {
             const loadingEl = document.getElementById('loading');
             const errorEl = document.getElementById('error');
@@ -501,7 +1015,6 @@
                 const response = await fetch(CSV_URL);
                 if (!response.ok) throw new Error('Ошибка сети при загрузке данных');
                 const csvText = await response.text();
-
                 const rows = parseCSV(csvText).map(r => r.map(c => c.trim()));
                 if (rows.length < 2) throw new Error('В таблице недостаточно данных.');
 
@@ -527,19 +1040,16 @@
                     dateIndex = 0; weightIndex = 1; headerRowIndex = 0;
                 }
 
-                const dataByDay = {};
-
+                const entries = [];
                 for (let i = headerRowIndex + 1; i < rows.length; i++) {
                     const row = rows[i];
                     if (row.length <= Math.max(dateIndex, weightIndex)) continue;
-
                     const dateStr = row[dateIndex];
                     const weightStr = row[weightIndex];
                     if (!dateStr) continue;
 
                     let date = null;
                     let match;
-
                     if ((match = dateStr.match(/^(\d{1,2})[./](\d{1,2})[./](\d{2})$/))) {
                         date = new Date(2000 + parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
                     } else if ((match = dateStr.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/))) {
@@ -549,7 +1059,6 @@
                     } else {
                         date = new Date(dateStr);
                     }
-
                     if (!date || isNaN(date.getTime())) continue;
                     date.setHours(0, 0, 0, 0);
 
@@ -559,128 +1068,20 @@
                         const parsed = parseFloat(normalized);
                         if (!isNaN(parsed)) weight = parsed;
                     }
+                    if (weight <= 0) continue;
 
-                    const key = date.toISOString().slice(0, 10);
-                    dataByDay[key] = { weight, date };
+                    entries.push({ date, weight });
                 }
 
-                const filledDays = Object.keys(dataByDay);
-                if (filledDays.length === 0) throw new Error('Не удалось извлечь корректные данные.');
+                if (entries.length === 0) throw new Error('Не удалось извлечь корректные данные.');
 
-                const sortedKeys = filledDays.sort();
-                const firstDate = new Date(sortedKeys[0] + 'T00:00:00');
-                const lastDate  = new Date(sortedKeys[sortedKeys.length - 1] + 'T00:00:00');
-
-                const labels = [];
-                const weights = [];
-                const dates = [];
-                const jan1Indices = [];
-
-                let idx = 0;
-                for (let d = new Date(firstDate); d <= lastDate; d.setDate(d.getDate() + 1)) {
-                    const key = d.toISOString().slice(0, 10);
-                    labels.push(formatDateShort(d));
-                    dates.push(new Date(d));
-                    weights.push(dataByDay[key] !== undefined ? dataByDay[key].weight : 0);
-
-                    if (d.getMonth() === 0 && d.getDate() === 1) {
-                        jan1Indices.push(idx);
-                    }
-                    idx++;
-                }
-
-                let vAxisIndex = -1;
-                for (let i = 0; i < dates.length; i++) {
-                    if (dates[i] >= V_AXIS_DATE) {
-                        vAxisIndex = i;
-                        break;
-                    }
-                }
-                if (vAxisIndex === -1) vAxisIndex = 0;
-
-                const yearSegments = [];
-                let curYear = null;
-                let startIdx = 0;
-
-                for (let i = 0; i < dates.length; i++) {
-                    const y = dates[i].getFullYear();
-                    if (curYear === null) {
-                        curYear = y;
-                        startIdx = i;
-                    } else if (y !== curYear) {
-                        yearSegments.push({ year: curYear, startIdx: startIdx, endIdx: i - 1 });
-                        curYear = y;
-                        startIdx = i;
-                    }
-                }
-                if (curYear !== null) {
-                    yearSegments.push({ year: curYear, startIdx: startIdx, endIdx: dates.length - 1 });
-                }
-
-                const monthSegments = [];
-                let curMonthKey = null;
-                let mStartIdx = 0;
-
-                for (let i = 0; i < dates.length; i++) {
-                    const d = dates[i];
-                    const key = d.getFullYear() * 100 + d.getMonth();
-                    if (curMonthKey === null) {
-                        curMonthKey = key;
-                        mStartIdx = i;
-                    } else if (key !== curMonthKey) {
-                        monthSegments.push({
-                            year: dates[mStartIdx].getFullYear(),
-                            month: dates[mStartIdx].getMonth(),
-                            startIdx: mStartIdx,
-                            endIdx: i - 1
-                        });
-                        curMonthKey = key;
-                        mStartIdx = i;
-                    }
-                }
-                if (curMonthKey !== null) {
-                    monthSegments.push({
-                        year: dates[mStartIdx].getFullYear(),
-                        month: dates[mStartIdx].getMonth(),
-                        startIdx: mStartIdx,
-                        endIdx: dates.length - 1
-                    });
-                }
-
-                let maxWeight = null, minWeight = null;
-                let maxDate = null, minDate = null;
-                let firstRealDate = null, lastRealDate = null;
-                let firstRealWeight = null, lastRealWeight = null;
-
-                for (let i = 0; i < weights.length; i++) {
-                    const w = weights[i];
-                    if (w <= 0) continue;
-
-                    if (firstRealDate === null) {
-                        firstRealDate = dates[i];
-                        firstRealWeight = w;
-                    }
-                    lastRealDate = dates[i];
-                    lastRealWeight = w;
-
-                    if (maxWeight === null || w > maxWeight) { maxWeight = w; maxDate = dates[i]; }
-                    if (minWeight === null || w < minWeight) { minWeight = w; minDate = dates[i]; }
-                }
+                entries.sort((a, b) => a.date - b.date);
+                ALL_ENTRIES = entries;
 
                 loadingEl.style.display = 'none';
                 dashboardEl.style.display = 'flex';
 
-                updateStats({
-                    lastRealWeight,
-                    lastRealDate,
-                    firstRealWeight,
-                    firstRealDate,
-                    maxWeight, maxDate,
-                    minWeight, minDate
-                });
-
-                createChart(labels, weights, maxWeight, maxDate, minWeight, minDate,
-                            jan1Indices, yearSegments, monthSegments, vAxisIndex);
+                redraw();
 
             } catch (error) {
                 console.error('Ошибка:', error);
@@ -690,179 +1091,36 @@
             }
         }
 
-        function updateStats(data) {
-            const currentEl = document.getElementById('currentWeight');
-            const changeEl = document.getElementById('totalChange');
-            const maxEl = document.getElementById('maxWeight');
-            const minEl = document.getElementById('minWeight');
-            const swingEl = document.getElementById('swingValue');
-
-            if (data.lastRealWeight === null) {
-                currentEl.textContent = '--';
-                changeEl.textContent = '--';
-                maxEl.textContent = '--';
-                minEl.textContent = '--';
-                swingEl.textContent = '--';
-                return;
-            }
-
-            currentEl.innerHTML = data.lastRealWeight.toFixed(1) + ' кг<small>' +
-                formatDateShort(data.lastRealDate) + '</small>';
-            currentEl.style.color = colorForWeight(data.lastRealWeight);
-
-            const change = data.lastRealWeight - data.firstRealWeight;
-            const sign = change > 0 ? '+' : '';
-            const range = formatDateShort(data.firstRealDate) + ' → ' + formatDateShort(data.lastRealDate);
-            changeEl.innerHTML = sign + change.toFixed(1) + ' кг<small>' + range + '</small>';
-
-            if (data.maxWeight !== null) {
-                maxEl.innerHTML = data.maxWeight.toFixed(1) + ' кг<small>' +
-                    formatDateShort(data.maxDate) + '</small>';
-                maxEl.style.color = colorForWeight(data.maxWeight);
-            }
-
-            if (data.minWeight !== null) {
-                minEl.innerHTML = data.minWeight.toFixed(1) + ' кг<small>' +
-                    formatDateShort(data.minDate) + '</small>';
-                minEl.style.color = colorForWeight(data.minWeight);
-            }
-
-            if (data.maxWeight !== null && data.minWeight !== null) {
-                const swing = data.maxWeight - data.minWeight;
-                const swingRange = data.minWeight.toFixed(1) + ' → ' + data.maxWeight.toFixed(1);
-                swingEl.innerHTML = swing.toFixed(1) + ' кг<small>' + swingRange + '</small>';
-            }
-        }
-
-        function createChart(labels, data, maxWeight, maxDate, minWeight, minDate,
-                             jan1Indices, yearSegments, monthSegments, vAxisIndex) {
-            if (chart) {
-                chart.destroy();
-                chart = null;
-            }
-
-            const ctx = document.getElementById('weightChart').getContext('2d');
-            const barColors = data.map(w => w > 0 ? colorForWeight(w) : 'transparent');
-
-            const isSmall = window.innerWidth < 600;
-            const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
-
-            const padTop = isLandscapePhone ? 6 : (isSmall ? 8 : 10);
-            const padBottom = isLandscapePhone ? 60 : (isSmall ? 65 : 70);
-            const padLeft = 12;
-            const padRight = 12;
-
-            const Y_AXIS_SHIFT = 8;
-
-            chart = new Chart(ctx, {
-                type: 'bar',
-                plugins: [yAxisLinePlugin, yearLinesPlugin, minMaxLinesPlugin, monthLabelsPlugin, yearLabelsPlugin],
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Масса тела (кг)',
-                        data: data,
-                        backgroundColor: barColors,
-                        borderColor: barColors,
-                        borderWidth: 0,
-                        borderRadius: 2,
-                        barPercentage: 1.0,
-                        categoryPercentage: 1.0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: { duration: 500, easing: 'easeOutQuart' },
-                    interaction: { mode: 'index', intersect: false },
-                    layout: {
-                        padding: { top: padTop, bottom: padBottom, left: padLeft, right: padRight }
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(44, 62, 80, 0.95)',
-                            titleFont: { size: 11 },
-                            bodyFont: { size: 12 },
-                            padding: 10,
-                            cornerRadius: 8,
-                            callbacks: {
-                                label: function(context) {
-                                    const v = context.parsed.y;
-                                    if (v === 0) return 'Нет данных (0 кг)';
-                                    return 'Масса: ' + v.toFixed(1) + ' кг';
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            min: 69,
-                            max: 76,
-                            title: {
-                                display: true,
-                                text: 'Масса тела (кг)',
-                                color: '#c8d8e8',
-                                font: { size: 10 },
-                                padding: { top: 0, bottom: 4 }
-                            },
-                            grid: { color: 'rgba(255,255,255,0.10)' },
-                            ticks: {
-                                color: '#c8d8e8',
-                                stepSize: 1,
-                                font: { size: 10 },
-                                padding: 4
-                            },
-                            afterFit(scale) {
-                                scale.width += Y_AXIS_SHIFT;
-                            }
-                        },
-                        x: {
-                            title: { display: false },
-                            grid: { display: false },
-                            ticks: {
-                                display: false,
-                                autoSkip: false,
-                                maxRotation: 0,
-                                minRotation: 0
-                            }
-                        }
-                    }
-                }
+        // ============================================================
+        //  Обработчики кнопок
+        // ============================================================
+        function setupPeriodButtons() {
+            document.querySelectorAll('.period-btn[data-period]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.period-btn[data-period]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    CURRENT_PERIOD = btn.dataset.period;
+                    COMPARE_MODE = false;
+                    document.getElementById('compareBtn').classList.remove('active');
+                    redraw();
+                });
             });
 
-            chart._maxWeight = maxWeight;
-            chart._maxDate = maxDate;
-            chart._minWeight = minWeight;
-            chart._minDate = minDate;
-            chart._jan1Indices = jan1Indices;
-            chart._yearSegments = yearSegments;
-            chart._monthSegments = monthSegments;
-            chart._vAxisIndex = vAxisIndex;
-
-            window.weightChartInstance = chart;
+            document.getElementById('compareBtn').addEventListener('click', () => {
+                COMPARE_MODE = !COMPARE_MODE;
+                document.getElementById('compareBtn').classList.toggle('active', COMPARE_MODE);
+                redraw();
+            });
         }
 
-        let resizeTimer = null;
         window.addEventListener('resize', () => {
-            if (resizeTimer) clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(() => {
-                if (window.weightChartInstance) {
-                    window.weightChartInstance.resize();
-                }
-            }, 200);
+            if (chart) chart.resize();
         });
 
-        window.onload = loadData;
-    </script>
-
-    <!-- Регистрация Service Worker для PWA -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch(() => {});
-            });
-        }
+        window.onload = () => {
+            setupPeriodButtons();
+            loadData();
+        };
     </script>
 </body>
 </html>
