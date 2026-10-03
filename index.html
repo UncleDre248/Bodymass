@@ -118,7 +118,6 @@
             align-items: stretch;
         }
         .period-btn {
-            /* Фон как у диаграммы */
             background: #0a1018;
             color: #c8d8e8;
             border: 1px solid #2c3a4f;
@@ -130,9 +129,10 @@
             transition: background 0.15s, color 0.15s, border-color 0.15s;
             white-space: nowrap;
             user-select: none;
-            /* Одинаковая ширина: все кнопки с одинаковой basis */
-            flex: 1 1 0;
+            /* Ширина уменьшена на ~70%: flex-basis 0.3 */
+            flex: 0 1 auto;
             text-align: center;
+            min-width: 60px;
         }
         .period-btn:hover { background: #131c28; }
         .period-btn.active {
@@ -140,9 +140,10 @@
             color: #001236;
             border-color: #4db8ff;
         }
-        /* Кнопка "Сравнение по годам" — как обычные кнопки */
+        /* "Сравнение по годам" прижата к правому краю */
         .period-btn.compare {
-            flex: 1.6 1 0; /* чуть шире, т.к. длинный текст */
+            margin-left: auto;
+            min-width: auto;
         }
 
         .chart-container {
@@ -186,7 +187,7 @@
             .stat-item p { font-size: 14px; }
             .stat-item h3 { font-size: 8px; }
             .stat-item p small { font-size: 8px; }
-            .period-btn { padding: 5px 6px; font-size: 11px; }
+            .period-btn { padding: 5px 6px; font-size: 11px; min-width: 52px; }
         }
         @media (max-width: 600px) {
             body { padding: 6px; }
@@ -198,12 +199,12 @@
             .stat-item p small { font-size: 7px; }
             .trend-arrow { font-size: 11px; margin-left: 2px; }
             .period-bar { gap: 3px; margin-bottom: 5px; }
-            .period-btn { padding: 4px 5px; font-size: 10px; border-radius: 6px; }
+            .period-btn { padding: 4px 5px; font-size: 10px; border-radius: 6px; min-width: 44px; }
             .chart-container { padding: 4px; min-height: 200px; }
         }
         @media (max-width: 420px) {
             .stat-item h3 { display: none; }
-            .period-btn { font-size: 9px; padding: 4px 4px; }
+            .period-btn { font-size: 9px; padding: 4px 4px; min-width: 38px; }
         }
         @media (max-width: 900px) and (orientation: landscape) {
             .stats { grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 4px; }
@@ -356,6 +357,27 @@
             ctx.lineTo(x, y + r);
             ctx.quadraticCurveTo(x, y, x + r, y);
             ctx.closePath();
+        }
+
+        // ============================================================
+        //  Параметры barPercentage/categoryPercentage по периоду
+        // ============================================================
+        // Размер "зазора" между столбцами задаётся через barPercentage.
+        // 1.0 = столбцы вплотную, меньше 1.0 — появляется зазор.
+        // Для периодов 1m/3m/6m — уменьшили barPercentage на ~60%
+        // (было 0.7 → 0.28), для 1y — зазор 1 пиксель (≈0.97),
+        // для all — без зазора (1.0).
+        function getBarParams(period) {
+            if (period === '1m' || period === '3m' || period === '6m') {
+                return { barPercentage: 0.28, categoryPercentage: 0.9 };
+            }
+            if (period === '1y') {
+                // Практически вплотную, но с 1px зазором — вычислим в createNormalChart,
+                // здесь возвращаем флаг для расчёта
+                return { barPercentage: 0.97, categoryPercentage: 1.0 };
+            }
+            // all — без зазора
+            return { barPercentage: 1.0, categoryPercentage: 1.0 };
         }
 
         const yAxisLinePlugin = {
@@ -698,8 +720,9 @@
                     borderColor: color,
                     backgroundColor: color,
                     showLine: false,
-                    pointRadius: 3,
-                    pointHoverRadius: 6,
+                    // Уменьшено на 30%: было 3 → стало 2 (для маленьких точек)
+                    pointRadius: 2,
+                    pointHoverRadius: 4,
                     pointBackgroundColor: color,
                     pointBorderColor: color,
                     parsing: false
@@ -723,6 +746,20 @@
             const showMonthYear = !showDateTicks;
             const padBottom = isLandscapePhone ? 60 : (isSmall ? 65 : 70);
 
+            // Параметры столбцов по периоду
+            const barParams = getBarParams(CURRENT_PERIOD);
+
+            // Для 1 год — вычисляем barPercentage так, чтобы зазор был ровно 1px
+            let barPercentage = barParams.barPercentage;
+            if (CURRENT_PERIOD === '1y') {
+                const area = document.getElementById('chartContainer').getBoundingClientRect();
+                const areaWidth = area.width - 24; // padding
+                const n = labels.length || 365;
+                const catWidth = areaWidth / n;
+                barPercentage = Math.max(0.01, (catWidth - 1) / catWidth);
+                if (barPercentage > 1) barPercentage = 1;
+            }
+
             chart = new Chart(ctx, {
                 type: 'bar',
                 plugins: [yAxisLinePlugin, yearLinesPlugin, minMaxLinesPlugin, monthLabelsPlugin, yearLabelsPlugin],
@@ -734,9 +771,9 @@
                         backgroundColor: barColors,
                         borderColor: barColors,
                         borderWidth: 0,
-                        borderRadius: 2,
-                        barPercentage: 0.7,
-                        categoryPercentage: 0.8
+                        borderRadius: 0,
+                        barPercentage: barPercentage,
+                        categoryPercentage: barParams.categoryPercentage
                     }]
                 },
                 options: {
@@ -816,7 +853,7 @@
                 const n = chart.data.labels.length;
                 if (!area || n === 0) return;
                 const catWidth = (area.right - area.left) / n;
-                const barW = catWidth * 0.8 * 0.7;
+                const barW = catWidth * barParams.categoryPercentage * barPercentage;
                 chart._barWidthHalf = barW / 2;
                 chart.draw();
             }, 0);
