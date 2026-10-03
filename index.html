@@ -836,6 +836,7 @@
             const prevEntry = entries.length > 1 ? entries[entries.length - 2] : null;
             const firstEntry = entries[0];
 
+            // === Текущая масса (стрелка = последний замер vs предыдущий) ===
             const currentWeight = lastEntry.weight;
             let arrow = '';
             if (prevEntry) {
@@ -851,12 +852,21 @@
             });
             currentEl.style.color = colorForWeight(currentWeight);
 
+            // === Изменение (стрелка = направление общего тренда за период) ===
             const change = lastEntry.weight - firstEntry.weight;
+            let changeArrow = '';
+            if (Math.abs(change) < 0.05) {
+                changeArrow = '<span class="trend-arrow trend-same">→</span>';
+            } else if (change > 0) {
+                changeArrow = '<span class="trend-arrow trend-up">↑</span>';
+            } else {
+                changeArrow = '<span class="trend-arrow trend-down">↓</span>';
+            }
             const range = formatDateShort(firstEntry.date) + ' → ' + formatDateShort(lastEntry.date);
             const changeFrom = statAnimators.totalChange.current;
             animateNumber(changeEl, changeFrom, change, 500, v => {
                 const sign = v > 0 ? '+' : '';
-                return sign + v.toFixed(1) + ' кг<small>' + range + '</small>';
+                return sign + v.toFixed(1) + ' кг' + changeArrow + '<small>' + range + '</small>';
             });
 
             let maxW = -Infinity, minW = Infinity;
