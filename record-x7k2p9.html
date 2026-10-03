@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Запись массы тела</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a1018">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0f1720;
+            color: #e8eef5;
+            display: flex;
+            padding: 12px;
+        }
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #1a2332;
+            padding: 12px;
+            border-radius: 16px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.5);
+            min-height: 0;
+            min-width: 0;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin: 0 0 10px;
+            flex-shrink: 0;
+        }
+        .stat-item {
+            background: linear-gradient(135deg, #1e2a3a 0%, #243447 100%);
+            padding: 7px 8px;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.25s, box-shadow 0.25s;
+            opacity: 0;
+            animation: fadeInUp 0.5s forwards;
+            min-width: 0;
+        }
+        .stat-item:nth-child(1) { animation-delay: 0.05s; }
+        .stat-item:nth-child(2) { animation-delay: 0.10s; }
+        .stat-item:nth-child(3) { animation-delay: 0.15s; }
+        .stat-item:nth-child(4) { animation-delay: 0.20s; }
+        .stat-item:nth-child(5) { animation-delay: 0.25s; }
+        .stat-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+        }
+        .stat-item h3 {
+            margin: 0 0 4px;
+            font-size: 10px;
+            color: #8aa0b4;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .stat-item p {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+            color: #4db8ff;
+            white-space: nowrap;
+        }
+        .stat-item p.positive { color: #e74c3c; }
+        .stat-item p.negative { color: #27ae60; }
+        .stat-item p.neutral  { color: #4db8ff; }
+        #totalChange,
+        #swingValue {
+            color: #ffffff !important;
+        }
+        .stat-item p small {
+            display: block;
+            font-size: 10px;
+            font-weight: 500;
+            color: #8aa0b4;
+            margin-top: 2px;
+            white-space: nowrap;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            flex: 1;
+            min-height: 200px;
+            background-color: #0a1018;
+            border-radius: 12px;
+            padding: 6px;
+            min-width: 0;
+        }
+        #loading, #error {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #8aa0b4;
+            margin: auto;
+        }
+        #error {
+            color: #e74c3c;
+            display: none;
+        }
+        #dashboard {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            min-height: 0;
+            min-width: 0;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ============ PIN-ЭКРАН ============ */
+        #pinScreen {
+            position: fixed;
+            inset: 0;
+            background: #0f1720;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .pin-box {
+            background: #1a2332;
+            padding: 32px 28px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+            text-align: center;
+            width: 300px;
+        }
+        .pin-box h2 {
+            margin: 0 0 20px;
+            font-size: 20px;
+            color: #e8eef5;
+        }
+        .pin-box input {
+            width: 100%;
+            padding: 12px 14px;
+            font-size: 18px;
+            border-radius: 10px;
+            border: 1px solid #2c3a4f;
+            background: #0a1018;
+            color: #e8eef5;
+            text-align: center;
+            letter-spacing: 4px;
+            outline: none;
+            margin-bottom: 12px;
+        }
+        .pin-box input:focus { border-color: #4db8ff; }
+        .pin-box button {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 10px;
+            border: none;
+            background: #4db8ff;
+            color: #001236;
+            cursor: pointer;
+        }
+        .pin-box button:hover { background: #6cc5ff; }
+        .pin-box .err {
+            color: #e74c3c;
+            font-size: 13px;
+            margin-top: 10px;
+            min-height: 18px;
+        }
+
+        /* ============ КНОПКА ГОЛОСОВОГО ВВОДА ============ */
+        #voiceFab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: #4db8ff;
+            color: #001236;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(77, 184, 255, 0.4);
+            z-index: 1000;
+            user-select: none;
+            transition: transform 0.2s, background 0.2s;
+        }
+        #voiceFab:active { transform: scale(0.95); }
+        #voiceFab.listening {
+            background: #e74c3c;
+            color: #fff;
+            animation: pulse 1.2s infinite;
+        }
+        @keyframes pulse {
+            0%   { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.6); }
+            70%  { box-shadow: 0 0 0 20px rgba(231, 76, 60, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+        }
+        #voiceStatus {
+            position: fixed;
+            bottom: 100px;
+            right: 24px;
+            background: rgba(44, 62, 80, 0.97);
+            color: #e8eef5;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+            z-index: 1000;
+            max-width: 280px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        /* ============ АДАПТИВ ============ */
+        @media (max-width: 1100px) {
+            .stat-item p { font-size: 17px; }
+        }
+        @media (max-width: 900px) {
+            .stats {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+                margin-bottom: 8px;
+            }
+            .stat-item p { font-size: 17px; }
+        }
+        @media (max-width: 600px) {
+            body { padding: 6px; }
+            .container { padding: 8px; border-radius: 12px; }
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 6px;
+                margin-bottom: 6px;
+            }
+            .stat-item { padding: 6px 6px; border-radius: 8px; }
+            .stat-item h3 {
+                font-size: 9px;
+                letter-spacing: 0.5px;
+                margin-bottom: 3px;
+            }
+            .stat-item p { font-size: 15px; }
+            .stat-item p small { font-size: 9px; }
+            .chart-container { padding: 4px; min-height: 200px; }
+            #voiceFab { bottom: 16px; right: 16px; width: 56px; height: 56px; font-size: 24px; }
+            #voiceStatus { bottom: 84px; right: 16px; }
+        }
+        @media (max-width: 900px) and (orientation: landscape) {
+            .stats {
+                grid-template-columns: repeat(5, 1fr);
+                gap: 5px;
+                margin-bottom: 6px;
+            }
+            .stat-item { padding: 4px 3px; }
+            .stat-item h3 { font-size: 8px; margin-bottom: 1px; }
+            .stat-item p { font-size: 13px; }
+            .stat-item p small { font-size: 8px; }
+            .chart-container { min-height: 180px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- PIN-ЭКРАН -->
+    <div id="pinScreen">
+        <div class="pin-box">
+            <h2>🔒 Введите PIN</h2>
+            <input type="password" id="pinInput" inputmode="numeric" maxlength="12" autocomplete="off">
+            <button id="pinBtn">Войти</button>
+            <div class="err" id="pinError"></div>
+        </div>
+    </div>
+
+    <div class="container" style="display:none;" id="mainContainer">
+        <div id="loading">Загрузка данных...</div>
+        <div id="error"></div>
+
+        <div id="dashboard">
+            <div class="stats">
+                <div class="stat-item">
+                    <h3>Текущая масса</h3>
+                    <p id="currentWeight">--</p>
+                </div>
+                <div class="stat-item">
+                    <h3>Максимум</h3>
+                    <p id="maxWeight">--</p>
+                </div>
+                <div class="stat-item">
+                    <h3>Минимум</h3>
+                    <p id="minWeight">--</p>
+                </div>
+                <div class="stat-item">
+                    <h3>Изменение</h3>
+                    <p id="totalChange">--</p>
+                </div>
+                <div class="stat-item">
+                    <h3>Колебание</h3>
+                    <p id="swingValue">--</p>
+                </div>
+            </div>
+            <div class="chart-container" id="chartContainer">
+                <canvas id="weightChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Кнопка голосового ввода -->
+    <div id="voiceFab" style="display:none;" title="Сказать массу тела">🎤</div>
+    <div id="voiceStatus"></div>
+
+    <script>
+        // ============================================================
+        //  НАСТРОЙКИ — ЗАМЕНИТЕ НА СВОИ ЗНАЧЕНИЯ
+        // ============================================================
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/ВАШ_ID/exec';
+        const SECRET_TOKEN = 'ЗАМЕНИТЕ_НА_СЛУЧАЙНУЮ_СТРОКУ';
+        const PIN_HASH = 'ЗАМЕНИТЕ_НА_ХЕШ_ОТ_ВАШЕГО_PIN'; // см. инструкцию ниже
+
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRCxUQ2eWCaI8HwAvEFRVc1VzXgjun4Gkx5K6vk3x7dHyKaaq_GHatCTUMkh2vb2EYIWCtVUmnLnPiE/pub?output=csv';
+
+        const MONTHS_RU = [
+            'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн',
+            'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'
+        ];
+
+        const RANGE_COLORS = {
+            69: '#1F9E1F',
+            70: '#66FF66',
+            71: '#00B0F0',
+            72: '#4472C4',
+            73: '#7030A0',
+            74: '#CC0099',
+            75: '#FF0000',
+            76: '#B20000'
+        };
+
+        const V_AXIS_DATE = new Date(2024, 7, 1);
+
+        function colorForWeight(w) {
+            const key = Math.floor(w);
+            if (RANGE_COLORS[key] !== undefined) return RANGE_COLORS[key];
+            if (key < 69) return RANGE_COLORS[69];
+            return RANGE_COLORS[76];
+        }
+
+        function hexToRgba(hex, alpha) {
+            const h = hex.replace('#', '');
+            const r = parseInt(h.substring(0, 2), 16);
+            const g = parseInt(h.substring(2, 4), 16);
+            const b = parseInt(h.substring(4, 6), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        function parseCSV(text) {
+            const rows = [];
+            let row = [];
+            let cell = '';
+            let inQuotes = false;
+            for (let i = 0; i < text.length; i++) {
+                const ch = text[i];
+                const next = text[i + 1];
+                if (inQuotes) {
+                    if (ch === '"' && next === '"') { cell += '"'; i++; }
+                    else if (ch === '"') { inQuotes = false; }
+                    else { cell += ch; }
+                } else {
+                    if (ch === '"') { inQuotes = true; }
+                    else if (ch === ',') { row.push(cell); cell = ''; }
+                    else if (ch === '\n' || ch === '\r') {
+                        if (ch === '\r' && next === '\n') i++;
+                        row.push(cell);
+                        rows.push(row);
+                        row = [];
+                        cell = '';
+                    } else { cell += ch; }
+                }
+            }
+            if (cell.length > 0 || row.length > 0) { row.push(cell); rows.push(row); }
+            return rows.filter(r => r.some(c => c.trim() !== ''));
+        }
+
+        function formatDateShort(date) {
+            const d = String(date.getDate()).padStart(2, '0');
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const y = String(date.getFullYear()).slice(-2);
+            return `${d}.${m}.${y}`;
+        }
+
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+        }
+
+        const yAxisLinePlugin = {
+            id: 'yAxisLine',
+            beforeDatasetsDraw(chart) {
+                const { ctx, chartArea, scales } = chart;
+                if (!chartArea) return;
+                if (chart._vAxisIndex == null) return;
+                const xScale = scales.x;
+                const x = xScale.getPixelForValue(chart._vAxisIndex);
+                if (x < chartArea.left || x > chartArea.right) return;
+                ctx.save();
+                ctx.beginPath();
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+                ctx.moveTo(x, chartArea.top);
+                ctx.lineTo(x, chartArea.bottom);
+                ctx.stroke();
+                ctx.restore();
+            }
+        };
+
+        const yearLinesPlugin = {
+            id: 'yearLines',
+            beforeDatasetsDraw(chart) {
+                const { ctx, chartArea, scales } = chart;
+                if (!chartArea) return;
+                if (!chart._jan1Indices || chart._jan1Indices.length === 0) return;
+                const xScale = scales.x;
+                ctx.save();
+                ctx.setLineDash([]);
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = 'rgba(200, 216, 232, 0.25)';
+                chart._jan1Indices.forEach(idx => {
+                    const x = xScale.getPixelForValue(idx);
+                    if (x >= chartArea.left && x <= chartArea.right) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, chartArea.top);
+                        ctx.lineTo(x, chartArea.bottom);
+                        ctx.stroke();
+                    }
+                });
+                ctx.restore();
+            }
+        };
+
+        const minMaxLinesPlugin = {
+            id: 'minMaxLines',
+            afterDatasetsDraw(chart) {
+                const { ctx, chartArea, scales } = chart;
+                if (!chartArea) return;
+                if (chart._maxWeight == null || chart._minWeight == null) return;
+                const yScale = scales.y;
+                const yMax = yScale.getPixelForValue(chart._maxWeight);
+                const yMin = yScale.getPixelForValue(chart._minWeight);
+                ctx.save();
+                ctx.setLineDash([3, 3]);
+                ctx.lineWidth = 1.5;
+                ctx.strokeStyle = hexToRgba(colorForWeight(chart._maxWeight), 0.5);
+                ctx.beginPath();
+                ctx.moveTo(chartArea.left, yMax);
+                ctx.lineTo(chartArea.right, yMax);
+                ctx.stroke();
+                ctx.strokeStyle = hexToRgba(colorForWeight(chart._minWeight), 0.5);
+                ctx.beginPath();
+                ctx.moveTo(chartArea.left, yMin);
+                ctx.lineTo(chartArea.right, yMin);
+                ctx.stroke();
+                ctx.restore();
+            },
+            afterDraw(chart) {
+                const { ctx, chartArea, scales } = chart;
+                if (!chartArea) return;
+                if (chart._maxWeight == null || chart._minWeight == null) return;
+                const yScale = scales.y;
+                const chartWidth = chartArea.right - chartArea.left;
+                const isSmall = chartWidth < 400;
+                const fontPx = isSmall ? 8 : 10;
+                const pw0 = isSmall ? 8 : 10;
+                const ph = isSmall ? 9.5 : 11;
+                const drawBadge = (weight, color) => {
+                    const y = yScale.getPixelForValue(weight);
+                    const x = chartArea.left - 4;
+                    ctx.save();
+                    ctx.font = `bold ${fontPx}px Inter, sans-serif`;
+                    const text = weight.toFixed(1);
+                    const tw = ctx.measureText(text).width;
+                    const pw = tw + pw0;
+                    const bx = x - pw - 2;
+                    const by = y - ph / 2;
+                    ctx.fillStyle = color;
+                    roundRect(ctx, bx, by, pw, ph, 3);
+                    ctx.fill();
+                    ctx.fillStyle = '#001236';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(text, bx + pw / 2, by + ph / 2 + 0.5);
+                    ctx.restore();
+                };
+                drawBadge(chart._maxWeight, colorForWeight(chart._maxWeight));
+                drawBadge(chart._minWeight, colorForWeight(chart._minWeight));
+            }
+        };
+
+        const monthLabelsPlugin = {
+            id: 'monthLabels',
+            afterDraw(chart) {
+                const { ctx, chartArea, scales } = chart;
+                if (!chartArea) return;
+                if (!chart._monthSegments || chart._monthSegments.length === 0) return;
+                const xScale = scales.x;
+                const chartWidth = chartArea.right - chartArea.left;
+                const isSmall = chartWidth < 400;
+                const fontPx = isSmall ? 8 : 10;
+                const offset = isSmall ? 6 : 8;
+                ctx.save();
+                ctx.font = `bold ${fontPx}px Inter, sans-serif`;
+                ctx.fillStyle = 'rgba(200, 216, 232, 0.75)';
+                chart._monthSegments.forEach(seg => {
+                    const xStart = xScale.getPixelForValue(seg.startIdx);
+                    const xEnd   = xScale.getPixelForValue(seg.endIdx);
+                    const xCenter = (xStart + xEnd) / 2;
+                    if (xCenter >= chartArea.left && xCenter <= chartArea.right) {
+                        const label = MONTHS_RU[seg.month];
+                        ctx.save();
+                        ctx.translate(xCenter, chartArea.bottom + offset);
+                        ctx.rotate(-Math.PI / 2);
+                        ctx.textAlign = 'right';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(label, 0, 0);
+                        ctx.restore();
+                    }
+                });
+                ctx.restore();
+            }
+        };
+
+        const yearLabelsPlugin = {
+            id: 'yearLabels',
+            afterDraw(chart) {
+                const { ctx, chartArea, scales } = chart;
+                if (!chartArea) return;
+                if (!chart._yearSegments || chart._yearSegments.length === 0) return;
+                const xScale = scales.x;
+                const chartWidth = chartArea.right - chartArea.left;
+                const isSmall = chartWidth < 400;
+                const fontPx = isSmall ? 9 : 11;
+                const offset = isSmall ? 38 : 42;
+                ctx.save();
+                ctx.font = `bold ${fontPx}px Inter, sans-serif`;
+                ctx.fillStyle = 'rgba(200, 216, 232, 0.55)';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                const y = chartArea.bottom + offset;
+                chart._yearSegments.forEach(seg => {
+                    const xStart = xScale.getPixelForValue(seg.startIdx);
+                    const xEnd   = xScale.getPixelForValue(seg.endIdx);
+                    const xCenter = (xStart + xEnd) / 2;
+                    if (xCenter >= chartArea.left && xCenter <= chartArea.right) {
+                        ctx.fillText(seg.year, xCenter, y);
+                    }
+                });
+                ctx.restore();
+            }
+        };
+
+        let chart = null;
+
+        async function loadData() {
+            const loadingEl = document.getElementById('loading');
+            const errorEl = document.getElementById('error');
+            const dashboardEl = document.getElementById('dashboard');
+
+            try {
+                const response = await fetch(CSV_URL);
+                if (!response.ok) throw new Error('Ошибка сети при загрузке данных');
+                const csvText = await response.text();
+                const rows = parseCSV(csvText).map(r => r.map(c => c.trim()));
+                if (rows.length < 2) throw new Error('В таблице недостаточно данных.');
+
+                let headerRowIndex = 0;
+                let dateIndex = -1;
+                let weightIndex = -1;
+
+                for (let i = 0; i < Math.min(5, rows.length); i++) {
+                    const headers = rows[i].map(h => h.toLowerCase());
+                    const d = headers.findIndex(h => h.includes('дата') || h.includes('date'));
+                    const w = headers.findIndex(h =>
+                        h.includes('масса') || h.includes('вес') ||
+                        h.includes('weight') || h.includes('mass')
+                    );
+                    if (d !== -1 && w !== -1) {
+                        headerRowIndex = i;
+                        dateIndex = d;
+                        weightIndex = w;
+                        break;
+                    }
+                }
+                if (dateIndex === -1 || weightIndex === -1) {
+                    dateIndex = 0; weightIndex = 1; headerRowIndex = 0;
+                }
+
+                const dataByDay = {};
+                for (let i = headerRowIndex + 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (row.length <= Math.max(dateIndex, weightIndex)) continue;
+                    const dateStr = row[dateIndex];
+                    const weightStr = row[weightIndex];
+                    if (!dateStr) continue;
+
+                    let date = null;
+                    let match;
+                    if ((match = dateStr.match(/^(\d{1,2})[./](\d{1,2})[./](\d{2})$/))) {
+                        date = new Date(2000 + parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
+                    } else if ((match = dateStr.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/))) {
+                        date = new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
+                    } else if ((match = dateStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))) {
+                        date = new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+                    } else {
+                        date = new Date(dateStr);
+                    }
+                    if (!date || isNaN(date.getTime())) continue;
+                    date.setHours(0, 0, 0, 0);
+
+                    let weight = 0;
+                    if (weightStr) {
+                        const normalized = weightStr.replace(/\s/g, '').replace(',', '.');
+                        const parsed = parseFloat(normalized);
+                        if (!isNaN(parsed)) weight = parsed;
+                    }
+                    const key = date.toISOString().slice(0, 10);
+                    dataByDay[key] = { weight, date };
+                }
+
+                const filledDays = Object.keys(dataByDay);
+                if (filledDays.length === 0) throw new Error('Не удалось извлечь корректные данные.');
+
+                const sortedKeys = filledDays.sort();
+                const firstDate = new Date(sortedKeys[0] + 'T00:00:00');
+                const lastDate  = new Date(sortedKeys[sortedKeys.length - 1] + 'T00:00:00');
+
+                const labels = [];
+                const weights = [];
+                const dates = [];
+                const jan1Indices = [];
+
+                let idx = 0;
+                for (let d = new Date(firstDate); d <= lastDate; d.setDate(d.getDate() + 1)) {
+                    const key = d.toISOString().slice(0, 10);
+                    labels.push(formatDateShort(d));
+                    dates.push(new Date(d));
+                    weights.push(dataByDay[key] !== undefined ? dataByDay[key].weight : 0);
+                    if (d.getMonth() === 0 && d.getDate() === 1) jan1Indices.push(idx);
+                    idx++;
+                }
+
+                let vAxisIndex = -1;
+                for (let i = 0; i < dates.length; i++) {
+                    if (dates[i] >= V_AXIS_DATE) { vAxisIndex = i; break; }
+                }
+                if (vAxisIndex === -1) vAxisIndex = 0;
+
+                const yearSegments = [];
+                let curYear = null;
+                let startIdx = 0;
+                for (let i = 0; i < dates.length; i++) {
+                    const y = dates[i].getFullYear();
+                    if (curYear === null) { curYear = y; startIdx = i; }
+                    else if (y !== curYear) {
+                        yearSegments.push({ year: curYear, startIdx: startIdx, endIdx: i - 1 });
+                        curYear = y;
+                        startIdx = i;
+                    }
+                }
+                if (curYear !== null) {
+                    yearSegments.push({ year: curYear, startIdx: startIdx, endIdx: dates.length - 1 });
+                }
+
+                const monthSegments = [];
+                let curMonthKey = null;
+                let mStartIdx = 0;
+                for (let i = 0; i < dates.length; i++) {
+                    const d = dates[i];
+                    const key = d.getFullYear() * 100 + d.getMonth();
+                    if (curMonthKey === null) { curMonthKey = key; mStartIdx = i; }
+                    else if (key !== curMonthKey) {
+                        monthSegments.push({
+                            year: dates[mStartIdx].getFullYear(),
+                            month: dates[mStartIdx].getMonth(),
+                            startIdx: mStartIdx,
+                            endIdx: i - 1
+                        });
+                        curMonthKey = key;
+                        mStartIdx = i;
+                    }
+                }
+                if (curMonthKey !== null) {
+                    monthSegments.push({
+                        year: dates[mStartIdx].getFullYear(),
+                        month: dates[mStartIdx].getMonth(),
+                        startIdx: mStartIdx,
+                        endIdx: dates.length - 1
+                    });
+                }
+
+                let maxWeight = null, minWeight = null;
+                let maxDate = null, minDate = null;
+                let firstRealDate = null, lastRealDate = null;
+                let firstRealWeight = null, lastRealWeight = null;
+                for (let i = 0; i < weights.length; i++) {
+                    const w = weights[i];
+                    if (w <= 0) continue;
+                    if (firstRealDate === null) { firstRealDate = dates[i]; firstRealWeight = w; }
+                    lastRealDate = dates[i];
+                    lastRealWeight = w;
+                    if (maxWeight === null || w > maxWeight) { maxWeight = w; maxDate = dates[i]; }
+                    if (minWeight === null || w < minWeight) { minWeight = w; minDate = dates[i]; }
+                }
+
+                loadingEl.style.display = 'none';
+                dashboardEl.style.display = 'flex';
+
+                updateStats({
+                    lastRealWeight, lastRealDate,
+                    firstRealWeight, firstRealDate,
+                    maxWeight, maxDate,
+                    minWeight, minDate
+                });
+
+                createChart(labels, weights, maxWeight, maxDate, minWeight, minDate,
+                            jan1Indices, yearSegments, monthSegments, vAxisIndex);
+
+            } catch (error) {
+                console.error('Ошибка:', error);
+                loadingEl.style.display = 'none';
+                errorEl.style.display = 'block';
+                errorEl.textContent = 'Не удалось загрузить данные: ' + error.message;
+            }
+        }
+
+        function updateStats(data) {
+            const currentEl = document.getElementById('currentWeight');
+            const changeEl = document.getElementById('totalChange');
+            const maxEl = document.getElementById('maxWeight');
+            const minEl = document.getElementById('minWeight');
+            const swingEl = document.getElementById('swingValue');
+
+            if (data.lastRealWeight === null) {
+                currentEl.textContent = '--';
+                changeEl.textContent = '--';
+                maxEl.textContent = '--';
+                minEl.textContent = '--';
+                swingEl.textContent = '--';
+                return;
+            }
+            currentEl.innerHTML = data.lastRealWeight.toFixed(1) + ' кг<small>' +
+                formatDateShort(data.lastRealDate) + '</small>';
+            currentEl.style.color = colorForWeight(data.lastRealWeight);
+
+            const change = data.lastRealWeight - data.firstRealWeight;
+            const sign = change > 0 ? '+' : '';
+            const range = formatDateShort(data.firstRealDate) + ' → ' + formatDateShort(data.lastRealDate);
+            changeEl.innerHTML = sign + change.toFixed(1) + ' кг<small>' + range + '</small>';
+
+            if (data.maxWeight !== null) {
+                maxEl.innerHTML = data.maxWeight.toFixed(1) + ' кг<small>' +
+                    formatDateShort(data.maxDate) + '</small>';
+                maxEl.style.color = colorForWeight(data.maxWeight);
+            }
+            if (data.minWeight !== null) {
+                minEl.innerHTML = data.minWeight.toFixed(1) + ' кг<small>' +
+                    formatDateShort(data.minDate) + '</small>';
+                minEl.style.color = colorForWeight(data.minWeight);
+            }
+            if (data.maxWeight !== null && data.minWeight !== null) {
+                const swing = data.maxWeight - data.minWeight;
+                const swingRange = data.minWeight.toFixed(1) + ' → ' + data.maxWeight.toFixed(1);
+                swingEl.innerHTML = swing.toFixed(1) + ' кг<small>' + swingRange + '</small>';
+            }
+        }
+
+        function createChart(labels, data, maxWeight, maxDate, minWeight, minDate,
+                             jan1Indices, yearSegments, monthSegments, vAxisIndex) {
+            if (chart) { chart.destroy(); chart = null; }
+
+            const ctx = document.getElementById('weightChart').getContext('2d');
+            const barColors = data.map(w => w > 0 ? colorForWeight(w) : 'transparent');
+            const isSmall = window.innerWidth < 600;
+            const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
+            const padTop = isLandscapePhone ? 6 : (isSmall ? 8 : 10);
+            const padBottom = isLandscapePhone ? 60 : (isSmall ? 65 : 70);
+            const padLeft = 12;
+            const padRight = 12;
+            const Y_AXIS_SHIFT = 8;
+
+            chart = new Chart(ctx, {
+                type: 'bar',
+                plugins: [yAxisLinePlugin, yearLinesPlugin, minMaxLinesPlugin, monthLabelsPlugin, yearLabelsPlugin],
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Масса тела (кг)',
+                        data: data,
+                        backgroundColor: barColors,
+                        borderColor: barColors,
+                        borderWidth: 0,
+                        borderRadius: 2,
+                        barPercentage: 1.0,
+                        categoryPercentage: 1.0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 500, easing: 'easeOutQuart' },
+                    interaction: { mode: 'index', intersect: false },
+                    layout: { padding: { top: padTop, bottom: padBottom, left: padLeft, right: padRight } },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(44, 62, 80, 0.95)',
+                            titleFont: { size: 11 },
+                            bodyFont: { size: 12 },
+                            padding: 10,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    const v = context.parsed.y;
+                                    if (v === 0) return 'Нет данных (0 кг)';
+                                    return 'Масса: ' + v.toFixed(1) + ' кг';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 69, max: 76,
+                            title: {
+                                display: true,
+                                text: 'Масса тела (кг)',
+                                color: '#c8d8e8',
+                                font: { size: 10 },
+                                padding: { top: 0, bottom: 4 }
+                            },
+                            grid: { color: 'rgba(255,255,255,0.10)' },
+                            ticks: {
+                                color: '#c8d8e8',
+                                stepSize: 1,
+                                font: { size: 10 },
+                                padding: 4
+                            },
+                            afterFit(scale) { scale.width += Y_AXIS_SHIFT; }
+                        },
+                        x: {
+                            title: { display: false },
+                            grid: { display: false },
+                            ticks: { display: false, autoSkip: false, maxRotation: 0, minRotation: 0 }
+                        }
+                    }
+                }
+            });
+
+            chart._maxWeight = maxWeight;
+            chart._maxDate = maxDate;
+            chart._minWeight = minWeight;
+            chart._minDate = minDate;
+            chart._jan1Indices = jan1Indices;
+            chart._yearSegments = yearSegments;
+            chart._monthSegments = monthSegments;
+            chart._vAxisIndex = vAxisIndex;
+
+            window.weightChartInstance = chart;
+        }
+
+        let resizeTimer = null;
+        window.addEventListener('resize', () => {
+            if (resizeTimer) clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                if (window.weightChartInstance) window.weightChartInstance.resize();
+            }, 200);
+        });
+
+        // ============================================================
+        //  PIN-АВТОРИЗАЦИЯ
+        // ============================================================
+        async function sha256(text) {
+            const buf = new TextEncoder().encode(text);
+            const hash = await crypto.subtle.digest('SHA-256', buf);
+            return Array.from(new Uint8Array(hash))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+        }
+
+        async function checkPin(pin) {
+            const h = await sha256(pin);
+            return h === PIN_HASH;
+        }
+
+        const pinScreen = document.getElementById('pinScreen');
+        const pinInput = document.getElementById('pinInput');
+        const pinBtn = document.getElementById('pinBtn');
+        const pinError = document.getElementById('pinError');
+        const mainContainer = document.getElementById('mainContainer');
+        const voiceFab = document.getElementById('voiceFab');
+
+        async function tryUnlock() {
+            const pin = pinInput.value.trim();
+            if (!pin) return;
+            if (await checkPin(pin)) {
+                localStorage.setItem('bodymass_pin', pin);
+                unlockUI();
+            } else {
+                pinError.textContent = 'Неверный PIN';
+                pinInput.value = '';
+            }
+        }
+
+        function unlockUI() {
+            pinScreen.style.display = 'none';
+            mainContainer.style.display = 'flex';
+            voiceFab.style.display = 'flex';
+            loadData();
+        }
+
+        pinBtn.addEventListener('click', tryUnlock);
+        pinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryUnlock(); });
+
+        // Проверяем сохранённый PIN при загрузке
+        (async function initPin() {
+            const saved = localStorage.getItem('bodymass_pin');
+            if (saved && await checkPin(saved)) {
+                unlockUI();
+            }
+        })();
+
+        // ============================================================
+        //  ГОЛОСОВОЙ ВВОД
+        // ============================================================
+        const voiceStatus = document.getElementById('voiceStatus');
+
+        const MONTHS_RU_FULL = [
+            'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+            'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+        ];
+        const ORDINALS = {
+            'первое': 1, 'второе': 2, 'третье': 3, 'четвёртое': 4, 'четвертое': 4,
+            'пятое': 5, 'шестое': 6, 'седьмое': 7, 'восьмое': 8, 'девятое': 9,
+            'десятое': 10, 'одиннадцатое': 11, 'двенадцатое': 12, 'тринадцатое': 13,
+            'четырнадцатое': 14, 'пятнадцатое': 15, 'шестнадцатое': 16,
+            'семнадцатое': 17, 'восемнадцатое': 18, 'девятнадцатое': 19,
+            'двадцатое': 20, 'двадцать первое': 21, 'двадцать второе': 22,
+            'двадцать третье': 23, 'двадцать четвёртое': 24, 'двадцать четвертое': 24,
+            'двадцать пятое': 25, 'двадцать шестое': 26, 'двадцать седьмое': 27,
+            'двадцать восьмое': 28, 'двадцать девятое': 29, 'тридцатое': 30,
+            'тридцать первое': 31
+        };
+
+        function showStatus(text, isError) {
+            voiceStatus.textContent = text;
+            voiceStatus.style.display = 'block';
+            voiceStatus.style.background = isError 
+                ? 'rgba(231, 76, 60, 0.95)' 
+                : 'rgba(44, 62, 80, 0.97)';
+            clearTimeout(showStatus._t);
+            showStatus._t = setTimeout(() => { voiceStatus.style.display = 'none'; }, 5000);
+        }
+
+        function fmt(d) {
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const yy = String(d.getFullYear()).slice(-2);
+            return dd + '.' + mm + '.' + yy;
+        }
+
+        function parseSpokenInput(text) {
+            const lower = text.toLowerCase();
+            let day = null, month = null, year = null, weight = null;
+
+            let weightMatch = lower.match(/(\d+)\s*[.,]\s*(\d+)/);
+            if (weightMatch) {
+                weight = parseFloat(weightMatch[1] + '.' + weightMatch[2]);
+            } else {
+                const allNumbers = lower.match(/\d+/g);
+                if (allNumbers && allNumbers.length > 0) {
+                    weight = parseFloat(allNumbers[allNumbers.length - 1]);
+                }
+            }
+
+            if (lower.includes('сегодня')) return { date: fmt(new Date()), weight };
+            if (lower.includes('вчера')) {
+                const d = new Date(); d.setDate(d.getDate() - 1); return { date: fmt(d), weight };
+            }
+            if (lower.includes('позавчера')) {
+                const d = new Date(); d.setDate(d.getDate() - 2); return { date: fmt(d), weight };
+            }
+
+            for (let i = 0; i < MONTHS_RU_FULL.length; i++) {
+                if (lower.includes(MONTHS_RU_FULL[i])) { month = i + 1; break; }
+            }
+
+            if (month !== null) {
+                const beforeMonth = lower.split(MONTHS_RU_FULL[month - 1])[0];
+                const dayMatch = beforeMonth.match(/(\d{1,2})\s*$/);
+                if (dayMatch) {
+                    day = parseInt(dayMatch[1]);
+                } else {
+                    for (const key in ORDINALS) {
+                        if (beforeMonth.includes(key)) { day = ORDINALS[key]; break; }
+                    }
+                }
+            }
+
+            const yearMatch = lower.match(/\b(20\d{2})\b/);
+            if (yearMatch) year = parseInt(yearMatch[1]);
+            else {
+                const yearWords = {
+                    'двадцать первого': 2021, 'двадцать второго': 2022,
+                    'двадцать третьего': 2023, 'двадцать четвёртого': 2024,
+                    'двадцать четвертого': 2024, 'двадцать пятого': 2025,
+                    'двадцать шестого': 2026, 'двадцать седьмого': 2027
+                };
+                for (const key in yearWords) {
+                    if (lower.includes(key)) { year = yearWords[key]; break; }
+                }
+            }
+
+            if (day !== null && month !== null) {
+                const y = year !== null ? year : new Date().getFullYear();
+                const d = new Date(y, month - 1, day);
+                if (d.getDate() === day && d.getMonth() === month - 1) {
+                    return { date: fmt(d), weight };
+                }
+            }
+            return { date: null, weight };
+        }
+
+        function startVoiceInput() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                showStatus('Голосовой ввод не поддерживается', true);
+                return;
+            }
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'ru-RU';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            voiceFab.classList.add('listening');
+            showStatus('🎤 Говорите...');
+
+            recognition.onresult = async (event) => {
+                voiceFab.classList.remove('listening');
+                const spoken = event.results[0][0].transcript;
+                const parsed = parseSpokenInput(spoken);
+
+                if (parsed.weight === null) {
+                    showStatus('Не распознал число: «' + spoken + '»', true);
+                    return;
+                }
+
+                const dateInfo = parsed.date ? ' за ' + parsed.date : ' (сегодня)';
+                showStatus('Записываю ' + parsed.weight.toFixed(1) + ' кг' + dateInfo + '...');
+
+                try {
+                    const body = {
+                        weight: parsed.weight,
+                        token: SECRET_TOKEN
+                    };
+                    if (parsed.date) body.date = parsed.date;
+
+                    const response = await fetch(APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify(body),
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                    });
+                    const result = await response.json();
+
+                    if (result.status === 'ok') {
+                        const mode = result.mode === 'updated' ? 'обновлено' : 'записано';
+                        showStatus('✅ ' + mode + ': ' + result.weight.toFixed(1) + ' кг за ' + result.date);
+                        setTimeout(() => { if (window.weightChartInstance) loadData(); }, 2000);
+                    } else {
+                        showStatus('Ошибка: ' + result.message, true);
+                    }
+                } catch (err) {
+                    showStatus('Не удалось записать: ' + err.message, true);
+                }
+            };
+
+            recognition.onerror = (event) => {
+                voiceFab.classList.remove('listening');
+                showStatus('Ошибка распознавания: ' + event.error, true);
+            };
+            recognition.onend = () => { voiceFab.classList.remove('listening'); };
+            recognition.start();
+        }
+
+        voiceFab.addEventListener('click', startVoiceInput);
+    </script>
+
+    <!-- Регистрация Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            });
+        }
+    </script>
+</body>
+</html>
