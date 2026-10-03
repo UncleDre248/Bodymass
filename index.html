@@ -302,8 +302,10 @@
         ];
 
         const V_AXIS_DATE = new Date(2024, 7, 1);
-        // Максимальная дата — 31.12.2026. Ось X всегда дотягивается до этой даты
         const MAX_DATE = new Date(2026, 11, 31, 23, 59, 59);
+
+        // Дата, до которой дотягивается ось X у диаграмм "Всё время" и "Сравнение по годам"
+        const X_MAX_DATE = new Date(2026, 11, 31);
 
         let ALL_ENTRIES = [];
         let CURRENT_PERIOD = 'all';
@@ -380,6 +382,10 @@
             ctx.closePath();
         }
 
+        // Параметры столбцов:
+        // 1м / 3м / 6м — узкие зазоры
+        // 1г — 1px зазор (рассчитывается в createNormalChart)
+        // всё время — БЕЗ зазоров
         function getBarParams(period) {
             if (period === '1m' || period === '3m' || period === '6m') {
                 return { barPercentage: 0.85, categoryPercentage: 0.95 };
@@ -387,6 +393,7 @@
             if (period === '1y') {
                 return { barPercentage: 0.97, categoryPercentage: 1.0 };
             }
+            // "all" — без зазоров
             return { barPercentage: 1.0, categoryPercentage: 1.0 };
         }
 
@@ -683,14 +690,18 @@
             swingEl.innerHTML = swing.toFixed(1) + ' кг<small>' + minW.toFixed(1) + ' → ' + maxW.toFixed(1) + '</small>';
         }
 
-        function buildNormalChartData(entries) {
+        // Параметр extendToMaxDate = true только для "Всё время".
+        // Для 1м / 3м / 6м / 1г — false, ось X заканчивается на последней реальной дате.
+        function buildNormalChartData(entries, extendToMaxDate) {
             if (entries.length === 0) {
                 return { labels: [], weights: [], jan1Indices: [], yearSegments: [], monthSegments: [], vAxisIndex: 0 };
             }
             const firstDate = new Date(entries[0].date);
             firstDate.setHours(0, 0, 0, 0);
-            // КЛЮЧЕВОЕ: последняя дата всегда 31.12.2026, даже если данных меньше
-            const lastDate = new Date(2026, 11, 31);
+            const lastDate = extendToMaxDate
+                ? new Date(X_MAX_DATE)
+                : new Date(entries[entries.length - 1].date);
+            lastDate.setHours(0, 0, 0, 0);
 
             const byDay = {};
             entries.forEach(e => {
@@ -709,7 +720,6 @@
                 const key = d.toISOString().slice(0, 10);
                 labels.push(formatDateShort(d));
                 dates.push(new Date(d));
-                // Если данных на этот день нет — ставим 0 (пустой столбик)
                 weights.push(byDay[key] !== undefined ? byDay[key] : 0);
                 if (d.getMonth() === 0 && d.getDate() === 1) jan1Indices.push(idx);
                 idx++;
@@ -802,7 +812,10 @@
         function createNormalChart(entries) {
             if (chart) { chart.destroy(); chart = null; }
             const ctx = document.getElementById('weightChart').getContext('2d');
-            const { labels, weights, jan1Indices, yearSegments, monthSegments, vAxisIndex } = buildNormalChartData(entries);
+            // Дотягиваем ось X до 31.12.2026 только для "Всё время"
+            const extendToMaxDate = (CURRENT_PERIOD === 'all');
+            const { labels, weights, jan1Indices, yearSegments, monthSegments, vAxisIndex } =
+                buildNormalChartData(entries, extendToMaxDate);
             const barColors = weights.map(w => w > 0 ? colorForWeight(w) : 'transparent');
 
             const isSmall = window.innerWidth < 600;
@@ -815,7 +828,7 @@
             const barParams = getBarParams(CURRENT_PERIOD);
 
             let barPercentage = barParams.barPercentage;
-            if (CURRENT_PERIOD === '1y' || CURRENT_PERIOD === 'all') {
+            if (CURRENT_PERIOD === '1y') {
                 const area = document.getElementById('chartContainer').getBoundingClientRect();
                 const areaWidth = area.width - 24;
                 const n = labels.length || 365;
