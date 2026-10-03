@@ -36,7 +36,6 @@
             overflow: hidden;
         }
 
-        /* === Кнопки-«закладки» === */
         .period-bar {
             position: relative;
             display: flex;
@@ -380,7 +379,8 @@
 
         const X_MAX_DATE = new Date(2026, 11, 31);
 
-        const PERIOD_ORDER = ['1m', '3m', '6m', '1y', 'all'];
+        // Порядок вкладок для свайпа — как в панели, включая «Сравнение по годам»
+        const SWIPE_ORDER = ['1m', '3m', '6m', '1y', 'all', 'compare'];
 
         let ALL_ENTRIES = [];
         let CURRENT_PERIOD = 'all';
@@ -1312,37 +1312,49 @@
             }
         }
 
-        function setActivePeriod(period) {
-            if (COMPARE_MODE) {
+        // === Универсальное переключение вкладки по ключу ===
+        // Ключи: '1m', '3m', '6m', '1y', 'all', 'compare'
+        function setActiveTab(tabKey) {
+            if (tabKey === 'compare') {
+                COMPARE_MODE = true;
+                CURRENT_PERIOD = 'all';
+                // Подсвечиваем только «Сравнение по годам», у остальных убираем active
+                document.querySelectorAll('.period-btn[data-period]').forEach(b => b.classList.remove('active'));
+                document.getElementById('compareBtn').classList.add('active');
+            } else {
                 COMPARE_MODE = false;
+                CURRENT_PERIOD = tabKey;
+                document.querySelectorAll('.period-btn[data-period]').forEach(b => {
+                    b.classList.toggle('active', b.dataset.period === tabKey);
+                });
                 document.getElementById('compareBtn').classList.remove('active');
             }
-            CURRENT_PERIOD = period;
-            document.querySelectorAll('.period-btn[data-period]').forEach(b => {
-                b.classList.toggle('active', b.dataset.period === period);
-            });
             redraw();
+        }
+
+        // Обратная совместимость с прежним API
+        function setActivePeriod(period) {
+            setActiveTab(period);
         }
 
         function setupPeriodButtons() {
             document.querySelectorAll('.period-btn[data-period]').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    setActivePeriod(btn.dataset.period);
+                    setActiveTab(btn.dataset.period);
                 });
             });
+            // Кнопка сравнения теперь работает как тумблер: включить/выключить
             document.getElementById('compareBtn').addEventListener('click', () => {
-                COMPARE_MODE = !COMPARE_MODE;
-                document.getElementById('compareBtn').classList.toggle('active', COMPARE_MODE);
                 if (COMPARE_MODE) {
-                    document.querySelectorAll('.period-btn[data-period]').forEach(b => {
-                        b.classList.toggle('active', b.dataset.period === 'all');
-                    });
-                    CURRENT_PERIOD = 'all';
+                    // Выключаем сравнение, возвращаемся ко «Всему времени»
+                    setActiveTab('all');
+                } else {
+                    setActiveTab('compare');
                 }
-                redraw();
             });
         }
 
+        // === Циклический свайп по всем вкладкам ===
         function setupSwipe() {
             const container = document.getElementById('chartContainer');
             if (!container) return;
@@ -1375,18 +1387,16 @@
                 if (Math.abs(dx) < THRESHOLD) return;
                 if (Math.abs(dy) > Math.abs(dx) * VERTICAL_DOMINANCE) return;
 
-                if (COMPARE_MODE) {
-                    COMPARE_MODE = false;
-                    document.getElementById('compareBtn').classList.remove('active');
-                }
+                // Текущий ключ вкладки: либо 'compare', либо период
+                const currentKey = COMPARE_MODE ? 'compare' : CURRENT_PERIOD;
+                let idx = SWIPE_ORDER.indexOf(currentKey);
+                if (idx === -1) idx = SWIPE_ORDER.length - 1; // fallback
 
-                const idx = PERIOD_ORDER.indexOf(CURRENT_PERIOD);
-                if (idx === -1) return;
-
-                let nextIdx = dx < 0 ? idx + 1 : idx - 1;
-                if (nextIdx < 0 || nextIdx >= PERIOD_ORDER.length) return;
-
-                setActivePeriod(PERIOD_ORDER[nextIdx]);
+                // Свайп влево (dx < 0) — следующая вкладка; вправо — предыдущая.
+                // Порядок циклический.
+                const dir = dx < 0 ? 1 : -1;
+                const nextIdx = (idx + dir + SWIPE_ORDER.length) % SWIPE_ORDER.length;
+                setActiveTab(SWIPE_ORDER[nextIdx]);
             }, { passive: true });
 
             container.addEventListener('touchcancel', () => { tracking = false; }, { passive: true });
