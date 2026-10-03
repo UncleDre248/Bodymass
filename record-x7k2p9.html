@@ -40,6 +40,7 @@
             gap: 8px;
             margin: 0 0 10px;
             flex-shrink: 0;
+            align-items: stretch;
         }
         .stat-item {
             background: linear-gradient(135deg, #1e2a3a 0%, #243447 100%);
@@ -50,13 +51,16 @@
             opacity: 0;
             animation: fadeInUp 0.5s forwards;
             min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
         .stat-item:nth-child(1) { animation-delay: 0.05s; }
         .stat-item:nth-child(2) { animation-delay: 0.10s; }
         .stat-item:nth-child(3) { animation-delay: 0.15s; }
         .stat-item:nth-child(4) { animation-delay: 0.20s; }
         .stat-item:nth-child(5) { animation-delay: 0.25s; }
-        .stat-item:nth-child(6) { animation-delay: 0.30s; }
         .stat-item:hover {
             transform: translateY(-3px);
             box-shadow: 0 6px 16px rgba(0,0,0,0.35);
@@ -95,24 +99,28 @@
             white-space: nowrap;
         }
 
-        /* ============ КНОПКА ЗАПИСИ (в ряду с плашками) ============ */
+        /* ============ КНОПКА ЗАПИСИ (квадратная) ============ */
         .voice-btn {
             background: #e74c3c;
             border-radius: 10px;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             user-select: none;
             transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
             box-shadow: 0 4px 12px rgba(231, 76, 60, 0.35);
-            padding: 7px 6px;
-            min-width: 0;
             color: #fff;
             text-align: center;
             opacity: 0;
             animation: fadeInUp 0.5s 0.30s forwards;
+            /* Квадрат: ширина = высоте */
+            aspect-ratio: 1 / 1;
+            width: 100%;
+            min-width: 0;
+            padding: 4px;
+            position: relative;
+            overflow: hidden;
         }
         .voice-btn:hover {
             transform: translateY(-3px);
@@ -122,16 +130,8 @@
             transform: scale(0.96);
         }
         .voice-btn .icon {
-            font-size: 22px;
+            font-size: 28px;
             line-height: 1;
-        }
-        .voice-btn .label {
-            font-size: 9px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin-top: 4px;
-            opacity: 0.9;
         }
         .voice-btn.listening {
             background: #c0392b;
@@ -143,17 +143,17 @@
         .voice-btn .result {
             font-size: 13px;
             font-weight: 700;
-            line-height: 1.1;
-            margin-top: 2px;
+            line-height: 1.15;
             white-space: normal;
             word-break: break-word;
+            padding: 2px;
         }
         .voice-btn .result small {
             display: block;
             font-size: 9px;
             font-weight: 500;
             margin-top: 2px;
-            opacity: 0.85;
+            opacity: 0.9;
         }
         @keyframes voicePulse {
             0%   { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
@@ -274,34 +274,39 @@
         }
         @media (max-width: 900px) {
             .stats {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 8px;
+                grid-template-columns: repeat(6, 1fr);
+                gap: 6px;
                 margin-bottom: 8px;
             }
-            .stat-item p { font-size: 15px; }
-            .voice-btn .icon { font-size: 20px; }
+            .stat-item p { font-size: 14px; }
+            .voice-btn .icon { font-size: 22px; }
         }
         @media (max-width: 600px) {
             body { padding: 6px; }
             .container { padding: 8px; border-radius: 12px; }
             .stats {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 6px;
+                grid-template-columns: repeat(6, 1fr);
+                gap: 4px;
                 margin-bottom: 6px;
             }
-            .stat-item { padding: 6px 4px; border-radius: 8px; }
+            .stat-item { padding: 5px 3px; border-radius: 8px; }
             .stat-item h3 {
-                font-size: 8px;
-                letter-spacing: 0.4px;
-                margin-bottom: 3px;
+                font-size: 7px;
+                letter-spacing: 0.3px;
+                margin-bottom: 2px;
             }
-            .stat-item p { font-size: 13px; }
-            .stat-item p small { font-size: 8px; }
-            .voice-btn { padding: 6px 4px; border-radius: 8px; }
+            .stat-item p { font-size: 12px; }
+            .stat-item p small { font-size: 7px; }
+            .voice-btn { border-radius: 8px; }
             .voice-btn .icon { font-size: 18px; }
-            .voice-btn .label { font-size: 8px; margin-top: 2px; }
-            .voice-btn .result { font-size: 11px; }
+            .voice-btn .result { font-size: 10px; }
             .chart-container { padding: 4px; min-height: 200px; }
+        }
+        @media (max-width: 420px) {
+            .stat-item h3 { display: none; }
+            .stat-item p { font-size: 12px; }
+            .stat-item p small { font-size: 7px; }
+            .voice-btn .icon { font-size: 16px; }
         }
         @media (max-width: 900px) and (orientation: landscape) {
             .stats {
@@ -313,9 +318,7 @@
             .stat-item h3 { font-size: 7px; margin-bottom: 1px; }
             .stat-item p { font-size: 12px; }
             .stat-item p small { font-size: 7px; }
-            .voice-btn { padding: 4px 3px; }
-            .voice-btn .icon { font-size: 16px; }
-            .voice-btn .label { font-size: 7px; }
+            .voice-btn .icon { font-size: 18px; }
             .voice-btn .result { font-size: 10px; }
             .chart-container { min-height: 180px; }
         }
@@ -361,7 +364,6 @@
                 </div>
                 <div class="voice-btn" id="voiceBtn" title="Сказать массу тела">
                     <div class="icon" id="voiceIcon">🎤</div>
-                    <div class="label" id="voiceLabel">Запись</div>
                 </div>
             </div>
             <div class="chart-container" id="chartContainer">
@@ -377,11 +379,11 @@
         //  НАСТРОЙКИ — ЗАМЕНИТЕ НА СВОИ ЗНАЧЕНИЯ
         // ============================================================
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/ВАШ_ID/exec';
-        const SECRET_TOKEN = 'xK9pL2mQ8vN4tR7wY3hJ5sD1fG6aZ0bC';
-        const PIN_HASH = 'd0ea2ecfa6b13d51da41b88897b957cfb92c44409d92c571dca5521e0f859a12'; // см. инструкцию ниже
+        const SECRET_TOKEN = 'ЗАМЕНИТЕ_НА_СЛУЧАЙНУЮ_СТРОКУ';
+        const PIN_HASH = 'ЗАМЕНИТЕ_НА_ХЕШ_ОТ_ВАШЕГО_PIN';
 
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRCxUQ2eWCaI8HwAvEFRVc1VzXgjun4Gkx5K6vk3x7dHyKaaq_GHatCTUMkh2vb2EYIWCtVUmnLnPiE/pub?output=csv';
-        
+
         const MONTHS_RU = [
             'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн',
             'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'
@@ -998,8 +1000,6 @@
         //  ГОЛОСОВОЙ ВВОД
         // ============================================================
         const voiceBtn = document.getElementById('voiceBtn');
-        const voiceIcon = document.getElementById('voiceIcon');
-        const voiceLabel = document.getElementById('voiceLabel');
         const voiceStatus = document.getElementById('voiceStatus');
 
         const MONTHS_RU_FULL = [
@@ -1102,16 +1102,12 @@
         function showResultOnButton(weight, date) {
             return new Promise(resolve => {
                 voiceBtn.classList.add('showing');
-                voiceIcon.style.display = 'none';
-                voiceLabel.style.display = 'none';
                 voiceBtn.innerHTML =
                     '<div class="result">' + weight.toFixed(1) + ' кг' +
                     (date ? '<small>' + date + '</small>' : '<small>сегодня</small>') +
                     '</div>';
                 setTimeout(() => {
-                    voiceBtn.innerHTML =
-                        '<div class="icon" id="voiceIcon">🎤</div>' +
-                        '<div class="label" id="voiceLabel">Запись</div>';
+                    voiceBtn.innerHTML = '<div class="icon" id="voiceIcon">🎤</div>';
                     voiceBtn.classList.remove('showing');
                     resolve();
                 }, 2000);
