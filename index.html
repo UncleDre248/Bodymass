@@ -36,7 +36,6 @@
             overflow: hidden;
         }
 
-        /* === Кнопки периодов — «закладки в папке» === */
         .period-bar {
             position: relative;
             display: flex;
@@ -45,17 +44,15 @@
             padding: 0 4px;
             flex-shrink: 0;
             align-items: flex-end;
-            /* Полоска-корешок папки */
             border-bottom: 1px solid #0a1018;
         }
         .period-btn {
             position: relative;
-            background: linear-gradient(135deg, #1e2a3a 0%, #243447 100%); /* как у плашек раньше */
+            background: linear-gradient(135deg, #1e2a3a 0%, #243447 100%);
             color: #a8bccf;
             border: 1px solid #2c3a4f;
             border-bottom: none;
             padding: 9px 8px 8px;
-            /* Верхние углы скруглены, нижние — прямые: форма закладки */
             border-radius: 10px 10px 0 0;
             font-size: 12px;
             font-weight: 600;
@@ -67,9 +64,7 @@
             flex: 0 0 90px;
             text-align: center;
             box-sizing: border-box;
-            /* «Прижимаем» к корешку — закладка уходит на 1px вниз, чтобы слиться с ним */
             margin-bottom: -1px;
-            /* Небольшая тень для эффекта «выступа над папкой» */
             box-shadow: inset 0 -3px 6px rgba(0,0,0,0.25);
         }
         .period-btn:hover {
@@ -77,7 +72,6 @@
             color: #c8d8e8;
         }
         .period-btn.active {
-            /* Активная закладка приподнята и подсвечена */
             background: #4db8ff;
             color: #001236;
             border-color: #4db8ff;
@@ -92,7 +86,6 @@
             min-width: 140px;
         }
 
-        /* === Плашки — теперь цвет как у фона диаграмм === */
         .stats {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -102,7 +95,7 @@
             align-items: stretch;
         }
         .stat-item {
-            background: #0a1018; /* как .chart-container */
+            background: #0a1018;
             padding: 5px 5px;
             border-radius: 8px;
             text-align: center;
@@ -205,7 +198,6 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* === Полноэкранный режим диаграммы === */
         html.chart-fullscreen,
         body.chart-fullscreen {
             padding: 0 !important;
@@ -306,7 +298,6 @@
         <div id="error"></div>
 
         <div id="dashboard">
-            <!-- Кнопки периодов — «закладки в папке» -->
             <div class="period-bar" id="periodBar">
                 <button class="period-btn active" data-period="all">Всё время</button>
                 <button class="period-btn" data-period="1y">1 год</button>
@@ -316,7 +307,6 @@
                 <button class="period-btn compare" id="compareBtn">Сравнение по годам</button>
             </div>
 
-            <!-- Плашки — цвет как фон диаграмм -->
             <div class="stats">
                 <div class="stat-item">
                     <h3>Текущая масса</h3>
@@ -1166,8 +1156,10 @@
                         },
                         x: {
                             type: 'linear',
-                            min: 1,
-                            max: 365,
+                            // Расширенный диапазон: точки дня 1 и дня 365 больше не на краю,
+                            // а с запасом в 1 день с каждой стороны — их не обрезает.
+                            min: 0,
+                            max: 366,
                             title: { display: false },
                             grid: { display: false },
                             ticks: { display: false }
