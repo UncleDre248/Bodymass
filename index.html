@@ -36,6 +36,7 @@
             overflow: hidden;
         }
 
+        /* === Кнопки-«закладки» === */
         .period-bar {
             position: relative;
             display: flex;
@@ -57,7 +58,6 @@
             font-size: 12px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
             white-space: nowrap;
             user-select: none;
             width: 90px;
@@ -66,10 +66,22 @@
             box-sizing: border-box;
             margin-bottom: -1px;
             box-shadow: inset 0 -3px 6px rgba(0,0,0,0.25);
+            /* Плавное пружинное «вытягивание» */
+            transition:
+                background 0.25s ease,
+                color 0.2s ease,
+                transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.3s ease;
+            will-change: transform;
         }
         .period-btn:hover {
             background: linear-gradient(135deg, #263347 0%, #2d3f55 100%);
             color: #c8d8e8;
+            transform: translateY(-2px);
+            /* Тень-подсветка, «падает» на корешок папки */
+            box-shadow:
+                inset 0 -3px 6px rgba(0,0,0,0.25),
+                0 6px 14px rgba(0,0,0,0.45);
         }
         .period-btn.active {
             background: #4db8ff;
@@ -175,16 +187,13 @@
             overflow: hidden;
             touch-action: manipulation;
         }
-        #loading, #error {
-            text-align: center;
-            padding: 40px;
-            font-size: 18px;
-            color: #8aa0b4;
-            margin: auto;
-        }
         #error {
             color: #e74c3c;
             display: none;
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            margin: auto;
         }
         #dashboard {
             display: none;
@@ -196,6 +205,58 @@
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(10px); }
             to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* === Скелетон-загрузка === */
+        #skeleton {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            min-width: 0;
+        }
+        .skeleton-periods {
+            display: flex;
+            gap: 4px;
+            padding: 0 4px;
+            margin-bottom: 6px;
+            flex-shrink: 0;
+        }
+        .skeleton-btn {
+            height: 34px;
+            width: 90px;
+            flex: 0 0 90px;
+            border-radius: 10px 10px 0 0;
+            background: linear-gradient(90deg, #1a2230 25%, #26313f 50%, #1a2230 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.6s infinite;
+        }
+        .skeleton-btn.wide { flex: 1 1 auto; width: auto; margin-left: auto; max-width: 160px; }
+        .skeleton-stats {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            margin-bottom: 4px;
+            flex-shrink: 0;
+        }
+        .skeleton-stat {
+            height: 40px;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #0a1018 25%, #141c28 50%, #0a1018 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.6s infinite;
+        }
+        .skeleton-chart {
+            flex: 1 1 auto;
+            min-height: 200px;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #0a1018 25%, #141c28 50%, #0a1018 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.6s infinite;
+        }
+        @keyframes shimmer {
+            0%   { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
         }
 
         html.chart-fullscreen,
@@ -211,7 +272,7 @@
         }
         body.chart-fullscreen .stats,
         body.chart-fullscreen .period-bar,
-        body.chart-fullscreen #loading,
+        body.chart-fullscreen #skeleton,
         body.chart-fullscreen #error {
             display: none !important;
         }
@@ -258,6 +319,7 @@
             .stat-item h3 { font-size: 7px; }
             .stat-item p small { font-size: 7px; }
             .trend-arrow { font-size: 16px; }
+            .skeleton-btn { height: 32px; width: 75px; flex: 0 0 75px; }
         }
         @media (max-width: 600px) {
             body { padding: 4px; }
@@ -272,6 +334,8 @@
             .stat-item p small { font-size: 7px; }
             .trend-arrow { font-size: 14px; margin-left: 2px; }
             .chart-container { padding: 3px; border-radius: 8px; }
+            .skeleton-btn { height: 30px; width: 62px; flex: 0 0 62px; }
+            .skeleton-stat { height: 34px; }
         }
         @media (max-width: 420px) {
             .stat-item h3 { display: none; }
@@ -279,6 +343,7 @@
             .period-btn { width: 54px; flex: 0 0 54px; font-size: 9px; padding: 7px 4px 6px; border-radius: 7px 7px 0 0; }
             .period-btn.compare { min-width: 90px; font-size: 9px; }
             .trend-arrow { font-size: 13px; }
+            .skeleton-btn { height: 28px; width: 54px; flex: 0 0 54px; }
         }
         @media (max-width: 900px) and (orientation: landscape) {
             .period-bar { gap: 3px; padding: 0 3px; }
@@ -294,7 +359,26 @@
 </head>
 <body>
     <div class="container">
-        <div id="loading">Загрузка данных...</div>
+        <!-- Скелетон-загрузка -->
+        <div id="skeleton">
+            <div class="skeleton-periods">
+                <div class="skeleton-btn"></div>
+                <div class="skeleton-btn"></div>
+                <div class="skeleton-btn"></div>
+                <div class="skeleton-btn"></div>
+                <div class="skeleton-btn"></div>
+                <div class="skeleton-btn wide"></div>
+            </div>
+            <div class="skeleton-stats">
+                <div class="skeleton-stat"></div>
+                <div class="skeleton-stat"></div>
+                <div class="skeleton-stat"></div>
+                <div class="skeleton-stat"></div>
+                <div class="skeleton-stat"></div>
+            </div>
+            <div class="skeleton-chart"></div>
+        </div>
+
         <div id="error"></div>
 
         <div id="dashboard">
@@ -377,6 +461,15 @@
         let COMPARE_MODE = false;
         let chart = null;
 
+        // Счётчики для number rolling
+        const statAnimators = {
+            currentWeight: { current: null, rafId: null },
+            maxWeight:     { current: null, rafId: null },
+            minWeight:     { current: null, rafId: null },
+            totalChange:   { current: null, rafId: null },
+            swingValue:    { current: null, rafId: null }
+        };
+
         function colorForWeight(w) {
             const key = Math.floor(w);
             if (RANGE_COLORS[key] !== undefined) return RANGE_COLORS[key];
@@ -447,7 +540,7 @@
             ctx.closePath();
         }
 
-        // «1 год» и «Всё время» — без зазоров; 1м/3м/6м — с небольшими зазорами
+        // «1 год» и «Всё время» — без зазоров
         function getBarParams(period) {
             if (period === '1m' || period === '3m' || period === '6m') {
                 return { barPercentage: 0.85, categoryPercentage: 0.95 };
@@ -463,6 +556,34 @@
             return 52;
         }
 
+        // === Number rolling: плавный переход значений ===
+        function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+        function animateNumber(el, from, to, duration, formatter) {
+            const key = el.id;
+            const anim = statAnimators[key];
+            if (!anim) { el.innerHTML = formatter(to); return; }
+            if (anim.rafId) cancelAnimationFrame(anim.rafId);
+            if (from === null || !isFinite(from)) from = to;
+            const start = performance.now();
+            const delta = to - from;
+
+            function tick(now) {
+                const t = Math.min(1, (now - start) / duration);
+                const eased = easeOutCubic(t);
+                const value = from + delta * eased;
+                el.innerHTML = formatter(value);
+                if (t < 1) {
+                    anim.rafId = requestAnimationFrame(tick);
+                } else {
+                    anim.rafId = null;
+                    anim.current = to;
+                }
+            }
+            anim.rafId = requestAnimationFrame(tick);
+        }
+
+        // === Плагины графика ===
         const yAxisLinePlugin = {
             id: 'yAxisLine',
             beforeDatasetsDraw(chart) {
@@ -746,6 +867,28 @@
             }
         };
 
+        // === Плагин последовательного появления лет в сравнении ===
+        const yearStaggerPlugin = {
+            id: 'yearStagger',
+            beforeDatasetsDraw(chart) {
+                if (!chart._compareMode) return;
+                if (!chart._staggerStart) return;
+                const now = performance.now();
+                const elapsed = now - chart._staggerStart;
+                const STEP = 150; // мс между годами
+                chart.data.datasets.forEach((ds, i) => {
+                    const threshold = i * STEP;
+                    const target = ds._origPointRadius != null ? ds._origPointRadius : 2;
+                    ds.pointRadius = elapsed >= threshold ? target : 0;
+                });
+                // Останавливаем анимацию, когда все годы проявились
+                const totalTime = (chart.data.datasets.length - 1) * STEP + 50;
+                if (elapsed < totalTime) {
+                    chart.update('none');
+                }
+            }
+        };
+
         function filterByPeriod(entries, period) {
             if (period === 'all' || entries.length === 0) return entries.slice();
             const lastDate = entries[entries.length - 1].date;
@@ -765,11 +908,14 @@
             const swingEl = document.getElementById('swingValue');
 
             if (entries.length === 0) {
-                currentEl.textContent = '--';
-                changeEl.textContent = '--';
-                maxEl.textContent = '--';
-                minEl.textContent = '--';
-                swingEl.textContent = '--';
+                ['currentWeight', 'totalChange', 'maxWeight', 'minWeight', 'swingValue'].forEach(id => {
+                    const el = document.getElementById(id);
+                    const anim = statAnimators[id];
+                    if (anim.rafId) cancelAnimationFrame(anim.rafId);
+                    anim.rafId = null;
+                    anim.current = null;
+                    el.textContent = '--';
+                });
                 return;
             }
 
@@ -777,35 +923,57 @@
             const prevEntry = entries.length > 1 ? entries[entries.length - 2] : null;
             const firstEntry = entries[0];
 
+            // Текущая масса
+            const currentWeight = lastEntry.weight;
             let arrow = '';
             if (prevEntry) {
-                const diff = lastEntry.weight - prevEntry.weight;
+                const diff = currentWeight - prevEntry.weight;
                 if (Math.abs(diff) < 0.05) arrow = '<span class="trend-arrow trend-same">→</span>';
                 else if (diff > 0) arrow = '<span class="trend-arrow trend-up">↑</span>';
                 else arrow = '<span class="trend-arrow trend-down">↓</span>';
             }
-            currentEl.innerHTML = lastEntry.weight.toFixed(1) + ' кг' + arrow +
-                '<small>' + formatDateShort(lastEntry.date) + '</small>';
-            currentEl.style.color = colorForWeight(lastEntry.weight);
+            const currentFrom = statAnimators.currentWeight.current;
+            animateNumber(currentEl, currentFrom, currentWeight, 500, v => {
+                return v.toFixed(1) + ' кг' + arrow +
+                    '<small>' + formatDateShort(lastEntry.date) + '</small>';
+            });
+            currentEl.style.color = colorForWeight(currentWeight);
 
+            // Изменение
             const change = lastEntry.weight - firstEntry.weight;
-            const sign = change > 0 ? '+' : '';
             const range = formatDateShort(firstEntry.date) + ' → ' + formatDateShort(lastEntry.date);
-            changeEl.innerHTML = sign + change.toFixed(1) + ' кг<small>' + range + '</small>';
+            const changeFrom = statAnimators.totalChange.current;
+            animateNumber(changeEl, changeFrom, change, 500, v => {
+                const sign = v > 0 ? '+' : '';
+                return sign + v.toFixed(1) + ' кг<small>' + range + '</small>';
+            });
 
+            // Максимум
             let maxW = -Infinity, minW = Infinity;
             let maxD = null, minD = null;
             entries.forEach(e => {
                 if (e.weight > maxW) { maxW = e.weight; maxD = e.date; }
                 if (e.weight < minW) { minW = e.weight; minD = e.date; }
             });
-            maxEl.innerHTML = maxW.toFixed(1) + ' кг<small>' + formatDateShort(maxD) + '</small>';
+            const maxFrom = statAnimators.maxWeight.current;
+            animateNumber(maxEl, maxFrom, maxW, 500, v =>
+                v.toFixed(1) + ' кг<small>' + formatDateShort(maxD) + '</small>'
+            );
             maxEl.style.color = colorForWeight(maxW);
-            minEl.innerHTML = minW.toFixed(1) + ' кг<small>' + formatDateShort(minD) + '</small>';
+
+            // Минимум
+            const minFrom = statAnimators.minWeight.current;
+            animateNumber(minEl, minFrom, minW, 500, v =>
+                v.toFixed(1) + ' кг<small>' + formatDateShort(minD) + '</small>'
+            );
             minEl.style.color = colorForWeight(minW);
 
+            // Колебание
             const swing = maxW - minW;
-            swingEl.innerHTML = swing.toFixed(1) + ' кг<small>' + minW.toFixed(1) + ' → ' + maxW.toFixed(1) + '</small>';
+            const swingFrom = statAnimators.swingValue.current;
+            animateNumber(swingEl, swingFrom, swing, 500, v =>
+                v.toFixed(1) + ' кг<small>' + minW.toFixed(1) + ' → ' + maxW.toFixed(1) + '</small>'
+            );
         }
 
         function buildNormalChartData(entries, extendToMaxDate) {
@@ -1047,6 +1215,9 @@
             const ctx = document.getElementById('weightChart').getContext('2d');
             const { datasets } = buildCompareChartData(entries);
 
+            // Сохраняем «истинный» радиус точки для плагина последовательного появления
+            datasets.forEach(ds => { ds._origPointRadius = ds.pointRadius; });
+
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
             const padTop = isLandscapePhone ? 8 : (isSmall ? 10 : 12);
@@ -1082,7 +1253,7 @@
 
             chart = new Chart(ctx, {
                 type: 'line',
-                plugins: [compareMonthGridPlugin, compareMonthLabelsPlugin],
+                plugins: [compareMonthGridPlugin, compareMonthLabelsPlugin, yearStaggerPlugin],
                 data: { datasets },
                 options: {
                     responsive: true,
@@ -1155,6 +1326,7 @@
             });
 
             chart._compareMode = true;
+            chart._staggerStart = performance.now();
             window.weightChartInstance = chart;
         }
 
@@ -1171,7 +1343,7 @@
         }
 
         async function loadData() {
-            const loadingEl = document.getElementById('loading');
+            const skeletonEl = document.getElementById('skeleton');
             const errorEl = document.getElementById('error');
             const dashboardEl = document.getElementById('dashboard');
 
@@ -1233,13 +1405,13 @@
                 entries.sort((a, b) => a.date - b.date);
                 ALL_ENTRIES = entries;
 
-                loadingEl.style.display = 'none';
+                skeletonEl.style.display = 'none';
                 dashboardEl.style.display = 'flex';
                 redraw();
 
             } catch (error) {
                 console.error('Ошибка:', error);
-                loadingEl.style.display = 'none';
+                skeletonEl.style.display = 'none';
                 errorEl.style.display = 'block';
                 errorEl.textContent = 'Не удалось загрузить данные: ' + error.message;
             }
