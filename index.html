@@ -187,6 +187,47 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
+        /* === Полноэкранный режим диаграммы === */
+        body.chart-fullscreen {
+            padding: 0;
+        }
+        body.chart-fullscreen .container {
+            padding: 0;
+            border-radius: 0;
+            background: #0a1018;
+            box-shadow: none;
+        }
+        body.chart-fullscreen .stats,
+        body.chart-fullscreen .period-bar {
+            display: none !important;
+        }
+        body.chart-fullscreen .chart-container {
+            border-radius: 0;
+            padding: 0;
+            background: #0a1018;
+        }
+        /* Подсказка в углу для выхода */
+        .fullscreen-hint {
+            display: none;
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            background: rgba(10, 16, 24, 0.75);
+            color: #8aa0b4;
+            border: 1px solid #2c3a4f;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            z-index: 1000;
+            pointer-events: none;
+            user-select: none;
+            backdrop-filter: blur(4px);
+        }
+        body.chart-fullscreen .fullscreen-hint {
+            display: block;
+        }
+
         @media (max-width: 1100px) {
             .stat-item p { font-size: 15px; }
             .trend-arrow { font-size: 20px; }
@@ -274,6 +315,8 @@
             </div>
         </div>
     </div>
+
+    <div class="fullscreen-hint">Двойной тап — выйти</div>
 
     <script>
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRCxUQ2eWCaI8HwAvEFRVc1VzXgjun4Gkx5K6vk3x7dHyKaaq_GHatCTUMkh2vb2EYIWCtVUmnLnPiE/pub?output=csv';
@@ -635,8 +678,6 @@
                 const { ctx, chartArea, scales } = chart;
                 if (!chartArea) return;
 
-                // Собираем только реально используемые диапазоны в текущих данных,
-                // чтобы не рисовать лишние цвета.
                 const usedKeys = new Set();
                 let hasBelow = false;
                 let hasAbove = false;
@@ -647,7 +688,6 @@
                     else usedKeys.add(k);
                 });
 
-                // Формируем список записей легенды
                 const items = [];
                 if (hasBelow) items.push({ label: '<69', color: RANGE_COLORS[69] });
                 for (let k = 69; k <= 76; k++) {
@@ -660,14 +700,12 @@
                 const isSmall = (chartArea.right - chartArea.left) < 480;
                 const fontPx = isSmall ? 9 : 11;
                 const boxSize = isSmall ? 8 : 10;
-                const gap = isSmall ? 5 : 7;
                 const itemGap = isSmall ? 8 : 12;
 
                 ctx.save();
                 ctx.font = `600 ${fontPx}px Inter, sans-serif`;
                 ctx.textBaseline = 'middle';
 
-                // Измеряем ширину всех элементов
                 let totalWidth = 0;
                 const sizes = items.map(it => {
                     const tw = ctx.measureText(it.label).width;
@@ -677,16 +715,13 @@
                 });
                 totalWidth += itemGap * (items.length - 1);
 
-                // Центрируем по chartArea
                 const startX = chartArea.left + ((chartArea.right - chartArea.left) - totalWidth) / 2;
                 let x = startX;
 
                 items.forEach((it, i) => {
-                    // Квадратик
                     ctx.fillStyle = it.color;
                     roundRect(ctx, x, top, boxSize, boxSize, 2);
                     ctx.fill();
-                    // Текст
                     ctx.fillStyle = '#c8d8e8';
                     ctx.textAlign = 'left';
                     ctx.fillText(it.label, x + boxSize + 3, top + boxSize / 2 + 0.5);
@@ -885,7 +920,6 @@
 
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
-            // Для "Всё время" сверху нужно место под легенду диапазонов
             const padTopBase = isLandscapePhone ? 26 : (isSmall ? 28 : 32);
             const padTop = (CURRENT_PERIOD === 'all') ? padTopBase + 22 : padTopBase;
             const padBottom = getPadBottom();
@@ -1207,7 +1241,6 @@
         }
 
         function setActivePeriod(period) {
-            // Если включён режим сравнения — выключаем его
             if (COMPARE_MODE) {
                 COMPARE_MODE = false;
                 document.getElementById('compareBtn').classList.remove('active');
@@ -1243,15 +1276,14 @@
             const container = document.getElementById('chartContainer');
             if (!container) return;
 
-            // Только на устройствах с touch-вводом
             const isTouch = window.matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window);
             if (!isTouch) return;
 
             let startX = 0;
             let startY = 0;
             let tracking = false;
-            const THRESHOLD = 50;    // минимальная длина свайпа в px
-            const VERTICAL_DOMINANCE = 1.2; // игнорируем, если вертикальное движение больше
+            const THRESHOLD = 50;
+            const VERTICAL_DOMINANCE = 1.2;
 
             container.addEventListener('touchstart', (e) => {
                 if (e.touches.length !== 1) { tracking = false; return; }
@@ -1272,7 +1304,6 @@
                 if (Math.abs(dx) < THRESHOLD) return;
                 if (Math.abs(dy) > Math.abs(dx) * VERTICAL_DOMINANCE) return;
 
-                // Если включён режим сравнения — свайп выключит его и перейдёт к периодам
                 if (COMPARE_MODE) {
                     COMPARE_MODE = false;
                     document.getElementById('compareBtn').classList.remove('active');
@@ -1281,8 +1312,6 @@
                 const idx = PERIOD_ORDER.indexOf(CURRENT_PERIOD);
                 if (idx === -1) return;
 
-                // Свайп влево (dx < 0) — следующий период (к большему диапазону)
-                // Свайп вправо (dx > 0) — предыдущий период (к меньшему диапазону)
                 let nextIdx = dx < 0 ? idx + 1 : idx - 1;
                 if (nextIdx < 0 || nextIdx >= PERIOD_ORDER.length) return;
 
@@ -1292,11 +1321,110 @@
             container.addEventListener('touchcancel', () => { tracking = false; }, { passive: true });
         }
 
+        // === Полноэкранный режим по двойному тапу / двойному клику ===
+        let chartFullscreen = false;
+
+        function enterFullscreen() {
+            if (chartFullscreen) return;
+            chartFullscreen = true;
+            document.body.classList.add('chart-fullscreen');
+            // Даём браузеру перестроить layout, затем просим Chart.js перерисоваться
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (chart) chart.resize();
+                });
+            });
+        }
+
+        function exitFullscreen() {
+            if (!chartFullscreen) return;
+            chartFullscreen = false;
+            document.body.classList.remove('chart-fullscreen');
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (chart) chart.resize();
+                });
+            });
+        }
+
+        function toggleFullscreen() {
+            if (chartFullscreen) exitFullscreen();
+            else enterFullscreen();
+        }
+
+        function setupFullscreenToggle() {
+            const container = document.getElementById('chartContainer');
+            if (!container) return;
+
+            const DBL_TAP_MS = 300;      // окно между двумя тапами
+            const DBL_TAP_DIST = 30;     // максимальное смещение между тапами (px)
+
+            // --- Touch: двойной тап ---
+            let lastTapTime = 0;
+            let lastTapX = 0;
+            let lastTapY = 0;
+            let movedSinceTap = false;
+            let startX = 0, startY = 0;
+
+            container.addEventListener('touchstart', (e) => {
+                if (e.touches.length !== 1) return;
+                const t = e.touches[0];
+                startX = t.clientX;
+                startY = t.clientY;
+                movedSinceTap = false;
+            }, { passive: true });
+
+            container.addEventListener('touchmove', (e) => {
+                if (e.touches.length !== 1) return;
+                const t = e.touches[0];
+                const dx = t.clientX - startX;
+                const dy = t.clientY - startY;
+                // Если палец уехал больше, чем на 15 px — это уже не тап, а свайп/скролл
+                if (Math.abs(dx) > 15 || Math.abs(dy) > 15) movedSinceTap = true;
+            }, { passive: true });
+
+            container.addEventListener('touchend', (e) => {
+                if (movedSinceTap) return;                 // был свайп — игнорируем
+                if (!e.changedTouches || e.changedTouches.length === 0) return;
+                const t = e.changedTouches[0];
+                const now = Date.now();
+                const dx = t.clientX - lastTapX;
+                const dy = t.clientY - lastTapY;
+
+                if (now - lastTapTime < DBL_TAP_MS &&
+                    Math.abs(dx) < DBL_TAP_DIST &&
+                    Math.abs(dy) < DBL_TAP_DIST) {
+                    // Двойной тап
+                    toggleFullscreen();
+                    lastTapTime = 0;
+                } else {
+                    lastTapTime = now;
+                    lastTapX = t.clientX;
+                    lastTapY = t.clientY;
+                }
+            }, { passive: true });
+
+            // --- Mouse: двойной клик ---
+            container.addEventListener('dblclick', (e) => {
+                e.preventDefault();
+                toggleFullscreen();
+            });
+
+            // --- Выход по Esc ---
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && chartFullscreen) exitFullscreen();
+            });
+        }
+
         window.addEventListener('resize', () => { if (chart) chart.resize(); });
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => { if (chart) chart.resize(); }, 200);
+        });
 
         window.onload = () => {
             setupPeriodButtons();
             setupSwipe();
+            setupFullscreenToggle();
             loadData();
         };
     </script>
