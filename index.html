@@ -421,7 +421,10 @@
         const MAX_DATE = new Date(2026, 11, 31, 23, 59, 59);
         const X_MAX_DATE = new Date(2026, 11, 31);
 
+        // Порядок вкладок для свайпа (по циклу периодов)
         const SWIPE_ORDER = ['1m', '3m', '6m', '1y', 'all', 'compare'];
+        // Порядок кнопок в панели (визуальное расположение слева направо)
+        const VISUAL_ORDER = ['all', '1y', '6m', '3m', '1m', 'compare'];
 
         let ALL_ENTRIES = [];
         let CURRENT_PERIOD = 'all';
@@ -1321,6 +1324,8 @@
                 return;
             }
 
+            // forward: старая уезжает влево, новая приезжает справа
+            // backward: старая уезжает вправо, новая приезжает слева
             const outClass = direction === 'forward' ? 'slide-out-left' : 'slide-out-right';
             const inClass  = direction === 'forward' ? 'slide-in-from-right' : 'slide-in-from-left';
 
@@ -1432,13 +1437,16 @@
             }
         }
 
-        // === Вариант B: направление перелистывания ===
-        // - Переход НА «Сравнение» — всегда вперёд.
-        // - Переход С «Сравнения» — всегда назад.
-        // - Между остальными вкладками — по разнице индексов в SWIPE_ORDER.
+        // === Направление анимации ===
+        // 1) Если направление передано явно (свайп) — используем его.
+        // 2) Иначе определяем по положению кнопок в панели (VISUAL_ORDER).
+        //    Клик правее текущей → forward. Клик левее текущей → backward.
+        // 3) forward = старая уезжает влево, новая приезжает справа.
+        //    backward = старая уезжает вправо, новая приезжает слева.
         function setActiveTab(tabKey, opts) {
             opts = opts || {};
             let noAnimation = !!opts.noAnimation;
+            const forcedDirection = opts.direction;
 
             if (switchInProgress && !noAnimation) {
                 noAnimation = true;
@@ -1447,17 +1455,13 @@
             const oldKey = COMPARE_MODE ? 'compare' : CURRENT_PERIOD;
 
             let direction = 'same';
-            if (oldKey !== tabKey) {
-                if (tabKey === 'compare') {
-                    direction = 'forward';
-                } else if (oldKey === 'compare') {
-                    direction = 'backward';
-                } else {
-                    const oldIdx = SWIPE_ORDER.indexOf(oldKey);
-                    const newIdx = SWIPE_ORDER.indexOf(tabKey);
-                    if (oldIdx !== -1 && newIdx !== -1) {
-                        direction = newIdx > oldIdx ? 'forward' : 'backward';
-                    }
+            if (forcedDirection) {
+                direction = forcedDirection;
+            } else if (oldKey !== tabKey) {
+                const oldIdx = VISUAL_ORDER.indexOf(oldKey);
+                const newIdx = VISUAL_ORDER.indexOf(tabKey);
+                if (oldIdx !== -1 && newIdx !== -1) {
+                    direction = newIdx > oldIdx ? 'forward' : 'backward';
                 }
             }
 
@@ -1557,7 +1561,13 @@
 
                 const dir = dx < 0 ? 1 : -1;
                 const nextIdx = (idx + dir + SWIPE_ORDER.length) % SWIPE_ORDER.length;
-                setActiveTab(SWIPE_ORDER[nextIdx]);
+
+                // Направление анимации — по знаку dx, а не по вкладкам:
+                // палец влево → forward (уезжает влево, приезжает справа)
+                // палец вправо → backward (уезжает вправо, приезжает слева)
+                const animDirection = dx < 0 ? 'forward' : 'backward';
+
+                setActiveTab(SWIPE_ORDER[nextIdx], { direction: animDirection });
             }, { passive: true });
 
             container.addEventListener('touchcancel', () => { tracking = false; }, { passive: true });
