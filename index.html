@@ -398,6 +398,9 @@
         let COMPARE_MODE = false;
         let chart = null;
 
+        // Запоминаем последний брейкпоинт, чтобы реагировать на resize/поворот
+        let LAST_BREAKPOINT = -1;
+
         const statAnimators = {
             currentWeight: { current: null, rafId: null },
             maxWeight:     { current: null, rafId: null },
@@ -425,6 +428,25 @@
             const g = parseInt(h.substring(2, 4), 16);
             const b = parseInt(h.substring(4, 6), 16);
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        // === Адаптивный размер точек под ширину экрана ===
+        // Планшет/десктоп — базовый размер 2.3.
+        // Чем уже экран — тем мельче точки, чтобы они не «зажирали» плотные данные.
+        function getPointRadiusForScreen() {
+            const w = window.innerWidth;
+            if (w < 420) return { r: 1.2, hr: 2.6 };
+            if (w < 600) return { r: 1.5, hr: 3.2 };
+            if (w < 900) return { r: 1.9, hr: 4.0 };
+            return { r: 2.3, hr: 4.7 };
+        }
+
+        function currentBreakpoint() {
+            const w = window.innerWidth;
+            if (w < 420) return 1;
+            if (w < 600) return 2;
+            if (w < 900) return 3;
+            return 4;
         }
 
         function parseCSV(text) {
@@ -989,6 +1011,7 @@
 
             const years = Object.keys(byYear).map(Number).sort();
             const datasets = [];
+            const pt = getPointRadiusForScreen();
 
             years.forEach((year) => {
                 const color = colorForYear(year);
@@ -1004,9 +1027,8 @@
                     borderColor: color,
                     backgroundColor: color,
                     showLine: false,
-                    // Уменьшено ещё на ~10% (было 2.6 / 5.2)
-                    pointRadius: 2.3,
-                    pointHoverRadius: 4.7,
+                    pointRadius: pt.r,
+                    pointHoverRadius: pt.hr,
                     pointBackgroundColor: color,
                     parsing: false
                 });
@@ -1333,6 +1355,8 @@
                 entries.sort((a, b) => a.date - b.date);
                 ALL_ENTRIES = entries;
 
+                LAST_BREAKPOINT = currentBreakpoint();
+
                 loadingEl.style.display = 'none';
                 dashboardEl.style.display = 'flex';
                 redraw();
@@ -1512,15 +1536,35 @@
             });
         }
 
-        window.addEventListener('resize', () => { if (chart) chart.resize(); });
+        // Реагируем на resize: если брейкпоинт изменился — перерисовываем график,
+        // чтобы точки пересчитались под новый размер экрана.
+        window.addEventListener('resize', () => {
+            const bp = currentBreakpoint();
+            if (bp !== LAST_BREAKPOINT) {
+                LAST_BREAKPOINT = bp;
+                redraw();
+            } else if (chart) {
+                chart.resize();
+            }
+        });
+
         window.addEventListener('orientationchange', () => {
-            setTimeout(() => { if (chart) chart.resize(); }, 200);
+            setTimeout(() => {
+                const bp = currentBreakpoint();
+                if (bp !== LAST_BREAKPOINT) {
+                    LAST_BREAKPOINT = bp;
+                    redraw();
+                } else if (chart) {
+                    chart.resize();
+                }
+            }, 200);
         });
 
         window.onload = () => {
             setupPeriodButtons();
             setupSwipe();
             setupFullscreenToggle();
+            LAST_BREAKPOINT = currentBreakpoint();
             loadData();
         };
     </script>
