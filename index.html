@@ -370,8 +370,15 @@
             76: '#B20000'
         };
 
+        // === Цвета годов: более яркие/насыщенные ===
         const YEAR_COLORS = [
-            '#4db8ff', '#f39c12', '#e74c3c', '#27ae60', '#9b59b6', '#00cec9', '#e67e22'
+            '#00A6FF', // ярко-голубой
+            '#FF8A00', // насыщенный оранжевый
+            '#FF2E2E', // ярко-красный
+            '#00C853', // ярко-зелёный
+            '#B23BFF', // насыщенный фиолетовый
+            '#00E5D0', // ярко-бирюзовый
+            '#FF6A00'  // насыщенный апельсиновый
         ];
 
         const Y_GRID_COLOR      = 'rgba(255,255,255,0.10)';
@@ -998,11 +1005,13 @@
                     borderColor: color,
                     backgroundColor: color,
                     showLine: false,
-                    // Уменьшено на ~30% от прежних значений (2 → 1.4, 4 → 2.8)
-                    pointRadius: 1.4,
-                    pointHoverRadius: 2.8,
+                    // Увеличено на ~20% от 1.4 и 2.8
+                    pointRadius: 1.7,
+                    pointHoverRadius: 3.4,
                     pointBackgroundColor: color,
-                    pointBorderColor: color,
+                    // Лёгкая светлая обводка для контраста на тёмном фоне
+                    pointBorderColor: 'rgba(255,255,255,0.35)',
+                    pointBorderWidth: 0.5,
                     parsing: false
                 });
             });
