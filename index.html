@@ -370,13 +370,10 @@
             76: '#B20000'
         };
 
-        // === Цвета годов: яркие/насыщенные ===
-        // 1-й (оранжевый) заменён на ярко-жёлтый,
-        // 2-й (алый) заменён на чистый красный.
         const YEAR_COLORS = [
             '#00A6FF', // ярко-голубой
-            '#FFEA00', // ярко-жёлтый   ← было #FF8A00
-            '#FF0000', // чистый красный ← было #FF2E2E
+            '#FFEA00', // ярко-жёлтый
+            '#FF0000', // чистый красный
             '#00C853', // ярко-зелёный
             '#B23BFF', // насыщенный фиолетовый
             '#00E5D0', // ярко-бирюзовый
@@ -1007,12 +1004,10 @@
                     borderColor: color,
                     backgroundColor: color,
                     showLine: false,
-                    // Увеличено на ~70% от 1.7 и 3.4
+                    // Размер точек без обводки
                     pointRadius: 2.9,
                     pointHoverRadius: 5.8,
                     pointBackgroundColor: color,
-                    pointBorderColor: 'rgba(255,255,255,0.35)',
-                    pointBorderWidth: 0.6,
                     parsing: false
                 });
             });
@@ -1194,7 +1189,8 @@
                                 font: { size: 9 },
                                 boxWidth: 9,
                                 boxHeight: 9,
-                                padding: 8,
+                                // Увеличены промежутки между годами в 2 раза (было 8)
+                                padding: 16,
                                 usePointStyle: true,
                                 pointStyle: 'circle'
                             }
