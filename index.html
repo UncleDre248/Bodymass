@@ -518,6 +518,108 @@
             return center - half;
         }
 
+        // === LOESS (локальная взвешенная регрессия) ===
+        // Возвращает массив {x, y} — сглаженную кривую, проходящую через диапазон x.
+        // points: [{x, y}] отсортированный по x.
+        // bandwidth: доля от диапазона x, попадающая в окно (0.2–0.5 — обычно).
+        function loessSmooth(points, bandwidth, steps) {
+            if (!points || points.length < 3) return null;
+            const xs = points.map(p => p.x);
+            const xMin = Math.min(...xs);
+            const xMax = Math.max(...xs);
+            const xRange = xMax - xMin;
+            if (xRange <= 0) return null;
+
+            // Ширина окна в единицах x
+            const spanX = xRange * bandwidth;
+            // Сколько точек выборки кривой
+            const N = steps || 80;
+
+            const result = [];
+            for (let i = 0; i < N; i++) {
+                const x0 = xMin + (i / (N - 1)) * xRange;
+
+                // Находим точки, попадающие в окно [x0 - spanX/2, x0 + spanX/2]
+                // и вычисляем трикубические веса (как в классическом LOESS)
+                let sumW = 0, sumWX = 0, sumWY = 0, sumWXX = 0, sumWXY = 0;
+                let count = 0;
+                // Максимальное расстояние внутри окна для нормировки
+                let maxDist = 0;
+                const windowPoints = [];
+                for (let j = 0; j < points.length; j++) {
+                    const d = Math.abs(points[j].x - x0);
+                    if (d <= spanX) {
+                        windowPoints.push({ p: points[j], d });
+                        if (d > maxDist) maxDist = d;
+                    }
+                }
+                if (windowPoints.length < 2) continue;
+
+                for (let k = 0; k < windowPoints.length; k++) {
+                    const { p, d } = windowPoints[k];
+                    // Трикубический вес: (1 - (d/maxDist)^3)^3
+                    const u = maxDist > 0 ? d / maxDist : 0;
+                    const w = Math.pow(1 - Math.pow(u, 3), 3);
+                    sumW   += w;
+                    sumWX  += w * p.x;
+                    sumWY  += w * p.y;
+                    sumWXX += w * p.x * p.x;
+                    sumWXY += w * p.x * p.y;
+                    count++;
+                }
+                if (count < 2 || sumW === 0) continue;
+
+                // Локальная линейная регрессия y = a*x + b с весами
+                const denom = sumW * sumWXX - sumWX * sumWX;
+                let a, b;
+                if (Math.abs(denom) < 1e-9) {
+                    // Все точки на одной вертикали — берём среднее
+                    a = 0;
+                    b = sumWY / sumW;
+                } else {
+                    a = (sumW * sumWXY - sumWX * sumWY) / denom;
+                    b = (sumWY - a * sumWX) / sumW;
+                }
+                const ySmooth = a * x0 + b;
+                result.push({ x: x0, y: ySmooth });
+            }
+
+            if (result.length < 2) return null;
+            return result;
+        }
+
+        // === Плагин плавных линий тренда ===
+        // chart._trendCurves — массив { points: [{x,y}, …], color }
+        const trendSmoothPlugin = {
+            id: 'trendSmooth',
+            afterDatasetsDraw(chart) {
+                if (!chart._trendCurves || chart._trendCurves.length === 0) return;
+                const { ctx, chartArea, scales } = chart;
+                if (!chartArea) return;
+
+                ctx.save();
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.lineWidth = 2;
+
+                chart._trendCurves.forEach(curve => {
+                    const pts = curve.points;
+                    if (!pts || pts.length < 2) return;
+                    ctx.strokeStyle = curve.color;
+                    ctx.globalAlpha = 0.85;
+                    ctx.beginPath();
+                    pts.forEach((p, i) => {
+                        const px = scales.x.getPixelForValue(p.x);
+                        const py = scales.y.getPixelForValue(p.y);
+                        if (i === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    });
+                    ctx.stroke();
+                });
+                ctx.restore();
+            }
+        };
+
         const yAxisLinePlugin = {
             id: 'yAxisLine',
             beforeDatasetsDraw(chart) {
@@ -836,7 +938,6 @@
             const prevEntry = entries.length > 1 ? entries[entries.length - 2] : null;
             const firstEntry = entries[0];
 
-            // === Текущая масса (стрелка = последний замер vs предыдущий) ===
             const currentWeight = lastEntry.weight;
             let arrow = '';
             if (prevEntry) {
@@ -852,7 +953,6 @@
             });
             currentEl.style.color = colorForWeight(currentWeight);
 
-            // === Изменение (стрелка = направление общего тренда за период) ===
             const change = lastEntry.weight - firstEntry.weight;
             let changeArrow = '';
             if (Math.abs(change) < 0.05) {
@@ -1008,7 +1108,7 @@
                 });
             });
 
-            return { datasets, years };
+            return { datasets, years, byYear };
         }
 
         function createNormalChart(entries) {
@@ -1131,7 +1231,7 @@
         function createCompareChart(entries) {
             if (chart) { chart.destroy(); chart = null; }
             const ctx = document.getElementById('weightChart').getContext('2d');
-            const { datasets } = buildCompareChartData(entries);
+            const { datasets, years, byYear } = buildCompareChartData(entries);
 
             const isSmall = window.innerWidth < 600;
             const isLandscapePhone = window.innerWidth < 900 && window.innerWidth > window.innerHeight;
@@ -1168,7 +1268,7 @@
 
             chart = new Chart(ctx, {
                 type: 'line',
-                plugins: [compareMonthGridPlugin, compareMonthLabelsPlugin],
+                plugins: [compareMonthGridPlugin, compareMonthLabelsPlugin, trendSmoothPlugin],
                 data: { datasets },
                 options: {
                     responsive: true,
@@ -1241,6 +1341,33 @@
             });
 
             chart._compareMode = true;
+
+            // === Построение плавных линий тренда по каждому году ===
+            chart._trendCurves = [];
+            years.forEach(year => {
+                const yearEntries = byYear[year];
+                if (!yearEntries || yearEntries.length < 3) return;
+                const pts = yearEntries.map(e => {
+                    const startOfYear = new Date(year, 0, 1);
+                    const dayOfYear = Math.floor((e.date - startOfYear) / 86400000) + 1;
+                    return { x: dayOfYear, y: e.weight };
+                }).sort((a, b) => a.x - b.x);
+
+                // Ширина окна: чем меньше точек, тем шире окно (но не меньше 0.35 и не больше 0.6)
+                const n = pts.length;
+                let bandwidth = 0.45;
+                if (n < 15) bandwidth = 0.6;
+                else if (n < 30) bandwidth = 0.5;
+                else if (n > 120) bandwidth = 0.35;
+
+                const curve = loessSmooth(pts, bandwidth, 90);
+                if (curve && curve.length >= 2) {
+                    chart._trendCurves.push({
+                        points: curve,
+                        color: colorForYear(year)
+                    });
+                }
+            });
 
             setTimeout(() => {
                 if (!chart) return;
