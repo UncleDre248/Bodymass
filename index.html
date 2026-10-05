@@ -184,6 +184,38 @@
             overflow: hidden;
             touch-action: manipulation;
         }
+
+        /* === Обёртка для эффекта перелистывания === */
+        .chart-inner {
+            position: absolute;
+            inset: 4px;
+            transition: transform 0.22s ease-in-out, opacity 0.22s ease-in-out;
+            will-change: transform, opacity;
+        }
+        .chart-inner.slide-out-left {
+            transform: translateX(-25%);
+            opacity: 0;
+        }
+        .chart-inner.slide-out-right {
+            transform: translateX(25%);
+            opacity: 0;
+        }
+        .chart-inner.slide-in-from-right {
+            transform: translateX(25%);
+            opacity: 0;
+            transition: none;
+        }
+        .chart-inner.slide-in-from-left {
+            transform: translateX(-25%);
+            opacity: 0;
+            transition: none;
+        }
+        .chart-inner.slide-in-enter {
+            transform: translateX(0);
+            opacity: 1;
+            transition: transform 0.22s ease-out, opacity 0.22s ease-out;
+        }
+
         #loading, #error {
             text-align: center;
             padding: 40px;
@@ -231,6 +263,9 @@
             border-radius: 0;
             padding: 0;
             background: #0a1018;
+        }
+        body.chart-fullscreen .chart-inner {
+            inset: 0;
         }
         .fullscreen-hint {
             display: none;
@@ -281,6 +316,7 @@
             .stat-item p small { font-size: 7px; }
             .trend-arrow { font-size: 14px; margin-left: 2px; }
             .chart-container { padding: 3px; border-radius: 8px; }
+            .chart-inner { inset: 3px; }
         }
         @media (max-width: 420px) {
             .stat-item h3 { display: none; }
@@ -340,7 +376,9 @@
             </div>
 
             <div class="chart-container" id="chartContainer">
-                <canvas id="weightChart"></canvas>
+                <div class="chart-inner" id="chartInner">
+                    <canvas id="weightChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -371,13 +409,7 @@
         };
 
         const YEAR_COLORS = [
-            '#00A6FF', // ярко-голубой
-            '#FFEA00', // ярко-жёлтый
-            '#FF0000', // чистый красный
-            '#00C853', // ярко-зелёный
-            '#B23BFF', // насыщенный фиолетовый
-            '#00E5D0', // ярко-бирюзовый
-            '#FF6A00'  // насыщенный апельсиновый
+            '#00A6FF', '#FFEA00', '#FF0000', '#00C853', '#B23BFF', '#00E5D0', '#FF6A00'
         ];
 
         const Y_GRID_COLOR      = 'rgba(255,255,255,0.10)';
@@ -388,9 +420,9 @@
 
         const V_AXIS_DATE = new Date(2024, 7, 1);
         const MAX_DATE = new Date(2026, 11, 31, 23, 59, 59);
-
         const X_MAX_DATE = new Date(2026, 11, 31);
 
+        // Порядок вкладок для определения направления свайпа и анимации
         const SWIPE_ORDER = ['1m', '3m', '6m', '1y', 'all', 'compare'];
 
         let ALL_ENTRIES = [];
@@ -398,7 +430,10 @@
         let COMPARE_MODE = false;
         let chart = null;
 
-        // Запоминаем последний брейкпоинт, чтобы реагировать на resize/поворот
+        // Для эффекта перелистывания
+        let lastTabKey = 'all';
+        let switchInProgress = false;
+
         let LAST_BREAKPOINT = -1;
 
         const statAnimators = {
@@ -430,9 +465,6 @@
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         }
 
-        // === Адаптивный размер точек под ширину экрана ===
-        // Планшет/десктоп — базовый размер 2.3.
-        // Чем уже экран — тем мельче точки, чтобы они не «зажирали» плотные данные.
         function getPointRadiusForScreen() {
             const w = window.innerWidth;
             if (w < 420) return { r: 1.2, hr: 2.6 };
@@ -1280,6 +1312,51 @@
             window.weightChartInstance = chart;
         }
 
+        // === Эффект перелистывания ===
+        // direction = 'forward' (следующий период), 'backward' (предыдущий), 'same'
+        function playPageFlip(direction, callback) {
+            const inner = document.getElementById('chartInner');
+            if (!inner) { callback(); return; }
+
+            // Прерываем предыдущую анимацию, если она ещё шла
+            inner.classList.remove(
+                'slide-out-left', 'slide-out-right',
+                'slide-in-from-right', 'slide-in-from-left', 'slide-in-enter'
+            );
+
+            if (direction === 'same') {
+                callback();
+                return;
+            }
+
+            const outClass = direction === 'forward' ? 'slide-out-left' : 'slide-out-right';
+            const inClass  = direction === 'forward' ? 'slide-in-from-right' : 'slide-in-from-left';
+
+            // Фаза 1: старая диаграмма уезжает
+            inner.classList.add(outClass);
+
+            setTimeout(() => {
+                // Фаза 2: перерисовываем данные (невидимо, потому что opacity = 0)
+                callback();
+
+                // Подготавливаем позицию для новой диаграммы
+                inner.classList.remove(outClass);
+                inner.classList.add(inClass);
+
+                // Форсируем пересчёт стилей, чтобы transition:none применился
+                void inner.offsetWidth;
+
+                // Фаза 3: новая диаграмма приезжает
+                inner.classList.remove(inClass);
+                inner.classList.add('slide-in-enter');
+
+                setTimeout(() => {
+                    inner.classList.remove('slide-in-enter');
+                    switchInProgress = false;
+                }, 240);
+            }, 200);
+        }
+
         function redraw() {
             if (COMPARE_MODE) {
                 const allEntries = filterByPeriod(ALL_ENTRIES, 'all');
@@ -1360,6 +1437,7 @@
                 loadingEl.style.display = 'none';
                 dashboardEl.style.display = 'flex';
                 redraw();
+                lastTabKey = COMPARE_MODE ? 'compare' : CURRENT_PERIOD;
 
             } catch (error) {
                 console.error('Ошибка:', error);
@@ -1369,7 +1447,29 @@
             }
         }
 
-        function setActiveTab(tabKey) {
+        // Обёртка со сменой режима + эффектом перелистывания
+        function setActiveTab(tabKey, opts) {
+            opts = opts || {};
+            const noAnimation = !!opts.noAnimation;
+
+            if (switchInProgress && !noAnimation) {
+                // Если анимация ещё идёт — не блокируем, просто выполним без неё
+                noAnimation = true;
+            }
+
+            const oldKey = COMPARE_MODE ? 'compare' : CURRENT_PERIOD;
+
+            // Определяем направление
+            let direction = 'same';
+            if (oldKey !== tabKey) {
+                const oldIdx = SWIPE_ORDER.indexOf(oldKey);
+                const newIdx = SWIPE_ORDER.indexOf(tabKey);
+                if (oldIdx !== -1 && newIdx !== -1) {
+                    direction = newIdx > oldIdx ? 'forward' : 'backward';
+                }
+            }
+
+            // Применяем состояние активной кнопки сразу — оно не участвует в анимации графика
             if (tabKey === 'compare') {
                 COMPARE_MODE = true;
                 CURRENT_PERIOD = 'all';
@@ -1383,7 +1483,35 @@
                 });
                 document.getElementById('compareBtn').classList.remove('active');
             }
-            redraw();
+
+            // Плашки обновляем сразу (number rolling сам всё сделает плавно)
+            if (COMPARE_MODE) {
+                const allEntries = filterByPeriod(ALL_ENTRIES, 'all');
+                updateStats(allEntries);
+            } else {
+                const filtered = filterByPeriod(ALL_ENTRIES, CURRENT_PERIOD);
+                updateStats(filtered);
+            }
+
+            if (noAnimation) {
+                redraw();
+                lastTabKey = tabKey;
+                return;
+            }
+
+            switchInProgress = true;
+            playPageFlip(direction, () => {
+                // Рисуем график без штатной анимации Chart.js —
+                // его заменит CSS-анимация перелистывания.
+                if (COMPARE_MODE) {
+                    const allEntries = filterByPeriod(ALL_ENTRIES, 'all');
+                    createCompareChart(allEntries);
+                } else {
+                    const filtered = filterByPeriod(ALL_ENTRIES, CURRENT_PERIOD);
+                    createNormalChart(filtered);
+                }
+                lastTabKey = tabKey;
+            });
         }
 
         function setActivePeriod(period) {
@@ -1536,13 +1664,11 @@
             });
         }
 
-        // Реагируем на resize: если брейкпоинт изменился — перерисовываем график,
-        // чтобы точки пересчитались под новый размер экрана.
         window.addEventListener('resize', () => {
             const bp = currentBreakpoint();
             if (bp !== LAST_BREAKPOINT) {
                 LAST_BREAKPOINT = bp;
-                redraw();
+                setActiveTab(COMPARE_MODE ? 'compare' : CURRENT_PERIOD, { noAnimation: true });
             } else if (chart) {
                 chart.resize();
             }
@@ -1553,7 +1679,7 @@
                 const bp = currentBreakpoint();
                 if (bp !== LAST_BREAKPOINT) {
                     LAST_BREAKPOINT = bp;
-                    redraw();
+                    setActiveTab(COMPARE_MODE ? 'compare' : CURRENT_PERIOD, { noAnimation: true });
                 } else if (chart) {
                     chart.resize();
                 }
