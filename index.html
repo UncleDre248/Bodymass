@@ -80,13 +80,14 @@
                 inset 0 -3px 6px rgba(0,0,0,0.25),
                 0 6px 14px rgba(0,0,0,0.45);
         }
+        /* Активная закладка — светло-серая, в цвет шрифта неактивных */
         .period-btn.active {
-            background: #4db8ff;
-            color: #001236;
-            border-color: #4db8ff;
+            background: #a8bccf;
+            color: #1a2332;
+            border-color: #a8bccf;
             transform: translateY(1px);
             z-index: 2;
-            box-shadow: 0 -2px 6px rgba(77, 184, 255, 0.35);
+            box-shadow: 0 -2px 6px rgba(168, 188, 207, 0.35);
         }
         .period-btn.compare {
             margin-left: auto;
@@ -421,9 +422,7 @@
         const MAX_DATE = new Date(2026, 11, 31, 23, 59, 59);
         const X_MAX_DATE = new Date(2026, 11, 31);
 
-        // Порядок вкладок для свайпа (по циклу периодов)
         const SWIPE_ORDER = ['1m', '3m', '6m', '1y', 'all', 'compare'];
-        // Порядок кнопок в панели (визуальное расположение слева направо)
         const VISUAL_ORDER = ['all', '1y', '6m', '3m', '1m', 'compare'];
 
         let ALL_ENTRIES = [];
@@ -1324,10 +1323,6 @@
                 return;
             }
 
-            // forward: старая уезжает влево, новая приезжает справа
-            //   (аналогично свайпу влево — палец идёт влево)
-            // backward: старая уезжает вправо, новая приезжает слева
-            //   (аналогично свайпу вправо — палец идёт вправо)
             const outClass = direction === 'forward' ? 'slide-out-left' : 'slide-out-right';
             const inClass  = direction === 'forward' ? 'slide-in-from-right' : 'slide-in-from-left';
 
@@ -1439,16 +1434,10 @@
             }
         }
 
-        // === Определение направления анимации ===
-        // forward  = старая уезжает ВЛЕВО,  новая приезжает СПРАВА
-        //           (аналогично свайпу влево — палец идёт влево)
-        // backward = старая уезжает ВПРАВО, новая приезжает СЛЕВА
-        //           (аналогично свайпу вправо — палец идёт вправо)
-        //
-        // 1) При свайпе направление передаётся явно по знаку dx.
-        // 2) При клике по кнопке:
-        //    - кнопка СПРАВА от текущей → аналогично свайпу вправо → backward
-        //    - кнопка СЛЕВА  от текущей → аналогично свайпу влево  → forward
+        // forward  = старая уезжает ВЛЕВО,  новая приезжает СПРАВА (как свайп влево)
+        // backward = старая уезжает ВПРАВО, новая приезжает СЛЕВА  (как свайп вправо)
+        // Кнопка справа → как свайп вправо → backward.
+        // Кнопка слева  → как свайп влево  → forward.
         function setActiveTab(tabKey, opts) {
             opts = opts || {};
             let noAnimation = !!opts.noAnimation;
@@ -1467,8 +1456,6 @@
                 const oldIdx = VISUAL_ORDER.indexOf(oldKey);
                 const newIdx = VISUAL_ORDER.indexOf(tabKey);
                 if (oldIdx !== -1 && newIdx !== -1) {
-                    // Кнопка правее → как свайп вправо → backward
-                    // Кнопка левее  → как свайп влево  → forward
                     direction = newIdx > oldIdx ? 'backward' : 'forward';
                 }
             }
@@ -1570,9 +1557,6 @@
                 const dir = dx < 0 ? 1 : -1;
                 const nextIdx = (idx + dir + SWIPE_ORDER.length) % SWIPE_ORDER.length;
 
-                // Направление анимации — по знаку dx:
-                // палец влево → forward (уезжает влево, приезжает справа)
-                // палец вправо → backward (уезжает вправо, приезжает слева)
                 const animDirection = dx < 0 ? 'forward' : 'backward';
 
                 setActiveTab(SWIPE_ORDER[nextIdx], { direction: animDirection });
