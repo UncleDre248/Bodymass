@@ -1325,7 +1325,9 @@
             }
 
             // forward: старая уезжает влево, новая приезжает справа
+            //   (аналогично свайпу влево — палец идёт влево)
             // backward: старая уезжает вправо, новая приезжает слева
+            //   (аналогично свайпу вправо — палец идёт вправо)
             const outClass = direction === 'forward' ? 'slide-out-left' : 'slide-out-right';
             const inClass  = direction === 'forward' ? 'slide-in-from-right' : 'slide-in-from-left';
 
@@ -1437,12 +1439,16 @@
             }
         }
 
-        // === Направление анимации ===
-        // 1) Если направление передано явно (свайп) — используем его.
-        // 2) Иначе определяем по положению кнопок в панели (VISUAL_ORDER).
-        //    Клик правее текущей → forward. Клик левее текущей → backward.
-        // 3) forward = старая уезжает влево, новая приезжает справа.
-        //    backward = старая уезжает вправо, новая приезжает слева.
+        // === Определение направления анимации ===
+        // forward  = старая уезжает ВЛЕВО,  новая приезжает СПРАВА
+        //           (аналогично свайпу влево — палец идёт влево)
+        // backward = старая уезжает ВПРАВО, новая приезжает СЛЕВА
+        //           (аналогично свайпу вправо — палец идёт вправо)
+        //
+        // 1) При свайпе направление передаётся явно по знаку dx.
+        // 2) При клике по кнопке:
+        //    - кнопка СПРАВА от текущей → аналогично свайпу вправо → backward
+        //    - кнопка СЛЕВА  от текущей → аналогично свайпу влево  → forward
         function setActiveTab(tabKey, opts) {
             opts = opts || {};
             let noAnimation = !!opts.noAnimation;
@@ -1461,7 +1467,9 @@
                 const oldIdx = VISUAL_ORDER.indexOf(oldKey);
                 const newIdx = VISUAL_ORDER.indexOf(tabKey);
                 if (oldIdx !== -1 && newIdx !== -1) {
-                    direction = newIdx > oldIdx ? 'forward' : 'backward';
+                    // Кнопка правее → как свайп вправо → backward
+                    // Кнопка левее  → как свайп влево  → forward
+                    direction = newIdx > oldIdx ? 'backward' : 'forward';
                 }
             }
 
@@ -1562,7 +1570,7 @@
                 const dir = dx < 0 ? 1 : -1;
                 const nextIdx = (idx + dir + SWIPE_ORDER.length) % SWIPE_ORDER.length;
 
-                // Направление анимации — по знаку dx, а не по вкладкам:
+                // Направление анимации — по знаку dx:
                 // палец влево → forward (уезжает влево, приезжает справа)
                 // палец вправо → backward (уезжает вправо, приезжает слева)
                 const animDirection = dx < 0 ? 'forward' : 'backward';
