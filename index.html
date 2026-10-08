@@ -80,7 +80,6 @@
                 inset 0 -3px 6px rgba(0,0,0,0.25),
                 0 6px 14px rgba(0,0,0,0.45);
         }
-        /* Активная закладка — светло-серая, в цвет шрифта неактивных */
         .period-btn.active {
             background: #a8bccf;
             color: #1a2332;
@@ -192,6 +191,7 @@
             transition: transform 0.22s ease-in-out, opacity 0.22s ease-in-out;
             will-change: transform, opacity;
         }
+        /* Перелистывание страниц */
         .chart-inner.slide-out-left {
             transform: translateX(-25%);
             opacity: 0;
@@ -214,6 +214,58 @@
             transform: translateX(0);
             opacity: 1;
             transition: transform 0.22s ease-out, opacity 0.22s ease-out;
+        }
+        /* Растягивание/сжатие по X при смене периодов */
+        .chart-inner.zoom-out {
+            transform: scaleX(0.7);
+            opacity: 0.35;
+            transform-origin: center center;
+        }
+        .chart-inner.zoom-in-prep {
+            transform: scaleX(1.3);
+            opacity: 0;
+            transition: none;
+            transform-origin: center center;
+        }
+        .chart-inner.zoom-in-enter {
+            transform: scaleX(1);
+            opacity: 1;
+            transition: transform 0.28s ease-out, opacity 0.28s ease-out;
+            transform-origin: center center;
+        }
+
+        /* Кнопка переключения типа диаграммы */
+        .type-toggle {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            background: rgba(26, 35, 50, 0.85);
+            border: 1px solid #2c3a4f;
+            color: #c8d8e8;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+            user-select: none;
+            transition: background 0.15s, color 0.15s, transform 0.15s;
+            backdrop-filter: blur(4px);
+        }
+        .type-toggle:hover {
+            background: rgba(44, 58, 79, 0.95);
+            color: #ffffff;
+            transform: scale(1.05);
+        }
+        .type-toggle.hidden {
+            display: none;
+        }
+        .type-toggle svg {
+            width: 16px;
+            height: 16px;
+            display: block;
         }
 
         #loading, #error {
@@ -317,6 +369,8 @@
             .trend-arrow { font-size: 14px; margin-left: 2px; }
             .chart-container { padding: 3px; border-radius: 8px; }
             .chart-inner { inset: 3px; }
+            .type-toggle { width: 26px; height: 26px; top: 4px; right: 4px; }
+            .type-toggle svg { width: 14px; height: 14px; }
         }
         @media (max-width: 420px) {
             .stat-item h3 { display: none; }
@@ -379,6 +433,21 @@
                 <div class="chart-inner" id="chartInner">
                     <canvas id="weightChart"></canvas>
                 </div>
+
+                <div class="type-toggle hidden" id="typeToggle" title="Переключить тип диаграммы">
+                    <svg id="iconBars" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="2" y="8" width="3" height="6" fill="currentColor" rx="0.5"/>
+                        <rect x="6.5" y="4" width="3" height="10" fill="currentColor" rx="0.5"/>
+                        <rect x="11" y="6" width="3" height="8" fill="currentColor" rx="0.5"/>
+                    </svg>
+                    <svg id="iconLine" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+                        <path d="M2 12 L6 7 L9 9 L14 3" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="2" cy="12" r="1.3" fill="currentColor"/>
+                        <circle cx="6" cy="7" r="1.3" fill="currentColor"/>
+                        <circle cx="9" cy="9" r="1.3" fill="currentColor"/>
+                        <circle cx="14" cy="3" r="1.3" fill="currentColor"/>
+                    </svg>
+                </div>
             </div>
         </div>
     </div>
@@ -430,8 +499,15 @@
         let COMPARE_MODE = false;
         let chart = null;
 
+        // Тип диаграммы для обычных периодов: 'bar' | 'line'
+        let CHART_KIND = 'bar';
+
         let switchInProgress = false;
         let LAST_BREAKPOINT = -1;
+
+        // Для прокрутки колесом
+        let wheelAccum = 0;
+        let wheelTimer = null;
 
         const statAnimators = {
             currentWeight: { current: null, rafId: null },
@@ -821,6 +897,7 @@
                 if (hasAbove) items.push({ label: '76+', color: RANGE_COLORS[76] });
                 if (items.length === 0) return;
 
+                // Легенда прижата к ЛЕВОМУ краю, чтобы не конфликтовать с кнопкой типа
                 const top = Math.max(2, chartArea.top - 14);
                 const isSmall = (chartArea.right - chartArea.left) < 480;
                 const fontPx = isSmall ? 9 : 10;
@@ -841,7 +918,8 @@
                 const columnWidth = maxTextW + textGap + boxSize;
                 const totalWidth = items.length * columnWidth + (items.length - 1) * itemGap;
 
-                const startX = chartArea.left + ((chartArea.right - chartArea.left) - totalWidth) / 2;
+                // Сдвигаем легенду к левому краю с небольшим отступом
+                const startX = chartArea.left + 4;
 
                 items.forEach((it, i) => {
                     const colLeft = startX + i * (columnWidth + itemGap);
@@ -1066,6 +1144,18 @@
             return { datasets, years };
         }
 
+        function updateTypeToggleVisibility() {
+            const btn = document.getElementById('typeToggle');
+            if (!btn) return;
+            if (COMPARE_MODE) {
+                btn.classList.add('hidden');
+            } else {
+                btn.classList.remove('hidden');
+                document.getElementById('iconBars').style.display = CHART_KIND === 'bar' ? 'block' : 'none';
+                document.getElementById('iconLine').style.display = CHART_KIND === 'line' ? 'block' : 'none';
+            }
+        }
+
         function createNormalChart(entries) {
             if (chart) { chart.destroy(); chart = null; }
             const ctx = document.getElementById('weightChart').getContext('2d');
@@ -1085,21 +1175,36 @@
 
             const barParams = getBarParams(CURRENT_PERIOD);
 
+            // Базовая конфигурация датасета зависит от типа диаграммы
+            const dataset = (CHART_KIND === 'bar')
+                ? {
+                    label: 'Масса тела (кг)',
+                    data: weights,
+                    backgroundColor: barColors,
+                    borderColor: barColors,
+                    borderWidth: 0,
+                    borderRadius: 0,
+                    barPercentage: barParams.barPercentage,
+                    categoryPercentage: barParams.categoryPercentage
+                }
+                : {
+                    label: 'Масса тела (кг)',
+                    data: weights,
+                    backgroundColor: 'transparent',
+                    borderColor: '#4db8ff',
+                    borderWidth: 1.5,
+                    pointRadius: 0,
+                    pointHoverRadius: 3,
+                    tension: 0.25,
+                    spanGaps: false
+                };
+
             chart = new Chart(ctx, {
-                type: 'bar',
+                type: CHART_KIND,
                 plugins: [monthGridPlugin, yAxisLinePlugin, yearLinesPlugin, minMaxLinesPlugin, monthLabelsPlugin, yearLabelsPlugin, weightLegendPlugin],
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: 'Масса тела (кг)',
-                        data: weights,
-                        backgroundColor: barColors,
-                        borderColor: barColors,
-                        borderWidth: 0,
-                        borderRadius: 0,
-                        barPercentage: barParams.barPercentage,
-                        categoryPercentage: barParams.categoryPercentage
-                    }]
+                    datasets: [dataset]
                 },
                 options: {
                     responsive: true,
@@ -1181,6 +1286,7 @@
             chart._minWeight = minW;
 
             window.weightChartInstance = chart;
+            updateTypeToggleVisibility();
         }
 
         function createCompareChart(entries) {
@@ -1307,15 +1413,20 @@
             }, 0);
 
             window.weightChartInstance = chart;
+            updateTypeToggleVisibility();
         }
 
-        function playPageFlip(direction, callback) {
+        // Универсальный эффект переключения:
+        //  - mode 'slide' — перелистывание (для случаев, где участвует «Сравнение»)
+        //  - mode 'zoom'  — сжатие/растяжение по X (для переходов между периодами)
+        function playTransition(mode, direction, callback) {
             const inner = document.getElementById('chartInner');
             if (!inner) { callback(); return; }
 
             inner.classList.remove(
                 'slide-out-left', 'slide-out-right',
-                'slide-in-from-right', 'slide-in-from-left', 'slide-in-enter'
+                'slide-in-from-right', 'slide-in-from-left', 'slide-in-enter',
+                'zoom-out', 'zoom-in-prep', 'zoom-in-enter'
             );
 
             if (direction === 'same') {
@@ -1323,26 +1434,48 @@
                 return;
             }
 
-            const outClass = direction === 'forward' ? 'slide-out-left' : 'slide-out-right';
-            const inClass  = direction === 'forward' ? 'slide-in-from-right' : 'slide-in-from-left';
-
-            inner.classList.add(outClass);
-
-            setTimeout(() => {
-                callback();
-
-                inner.classList.remove(outClass);
-                inner.classList.add(inClass);
-                void inner.offsetWidth;
-
-                inner.classList.remove(inClass);
-                inner.classList.add('slide-in-enter');
+            if (mode === 'zoom') {
+                // Фаза out: сжимаем по X, часть данных «уходит» за края
+                inner.classList.add('zoom-out');
 
                 setTimeout(() => {
-                    inner.classList.remove('slide-in-enter');
-                    switchInProgress = false;
-                }, 240);
-            }, 200);
+                    callback();
+
+                    // Фаза in: новая диаграмма появляется чуть «растянутой» и оседает к scaleX(1)
+                    inner.classList.remove('zoom-out');
+                    inner.classList.add('zoom-in-prep');
+                    void inner.offsetWidth;
+
+                    inner.classList.remove('zoom-in-prep');
+                    inner.classList.add('zoom-in-enter');
+
+                    setTimeout(() => {
+                        inner.classList.remove('zoom-in-enter');
+                        switchInProgress = false;
+                    }, 300);
+                }, 220);
+            } else {
+                const outClass = direction === 'forward' ? 'slide-out-left' : 'slide-out-right';
+                const inClass  = direction === 'forward' ? 'slide-in-from-right' : 'slide-in-from-left';
+
+                inner.classList.add(outClass);
+
+                setTimeout(() => {
+                    callback();
+
+                    inner.classList.remove(outClass);
+                    inner.classList.add(inClass);
+                    void inner.offsetWidth;
+
+                    inner.classList.remove(inClass);
+                    inner.classList.add('slide-in-enter');
+
+                    setTimeout(() => {
+                        inner.classList.remove('slide-in-enter');
+                        switchInProgress = false;
+                    }, 240);
+                }, 200);
+            }
         }
 
         function redraw() {
@@ -1434,10 +1567,10 @@
             }
         }
 
-        // forward  = старая уезжает ВЛЕВО,  новая приезжает СПРАВА (как свайп влево)
-        // backward = старая уезжает ВПРАВО, новая приезжает СЛЕВА  (как свайп вправо)
-        // Кнопка справа → как свайп вправо → backward.
-        // Кнопка слева  → как свайп влево  → forward.
+        // forward  = старая уезжает ВЛЕВО,  новая приезжает СПРАВА
+        // backward = старая уезжает ВПРАВО, новая приезжает СЛЕВА
+        // Кнопка справа → backward. Кнопка слева → forward.
+        // Если участвует compare — режим slide, иначе — zoom.
         function setActiveTab(tabKey, opts) {
             opts = opts || {};
             let noAnimation = !!opts.noAnimation;
@@ -1459,6 +1592,11 @@
                     direction = newIdx > oldIdx ? 'backward' : 'forward';
                 }
             }
+
+            // Выбор режима анимации:
+            // если хотя бы одна из вкладок — compare, используем слайд,
+            // иначе — зум (сжатие/растяжение).
+            const transitionMode = (oldKey === 'compare' || tabKey === 'compare') ? 'slide' : 'zoom';
 
             if (tabKey === 'compare') {
                 COMPARE_MODE = true;
@@ -1488,7 +1626,7 @@
             }
 
             switchInProgress = true;
-            playPageFlip(direction, () => {
+            playTransition(transitionMode, direction, () => {
                 if (COMPARE_MODE) {
                     const allEntries = filterByPeriod(ALL_ENTRIES, 'all');
                     createCompareChart(allEntries);
@@ -1516,6 +1654,53 @@
                     setActiveTab('compare');
                 }
             });
+        }
+
+        // === Прокрутка колесом мыши на десктопе ===
+        function setupWheel() {
+            const container = document.getElementById('chartContainer');
+            if (!container) return;
+
+            // Работает только на десктопе (не на тач-устройствах)
+            const isTouch = window.matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window);
+            if (isTouch) return;
+
+            const STEP_THRESHOLD = 40;   // накопленная дельта для срабатывания
+            const IDLE_TIMEOUT = 250;    // мс тишины, после которой накопление сбрасывается
+
+            container.addEventListener('wheel', (e) => {
+                e.preventDefault();
+
+                wheelAccum += e.deltaY;
+
+                if (wheelTimer) clearTimeout(wheelTimer);
+                wheelTimer = setTimeout(() => {
+                    wheelAccum = 0;
+                    wheelTimer = null;
+                }, IDLE_TIMEOUT);
+
+                if (Math.abs(wheelAccum) < STEP_THRESHOLD) return;
+                if (switchInProgress) return;
+
+                const deltaSign = wheelAccum > 0 ? 1 : -1;
+                wheelAccum = 0;
+
+                // Прокрутка вверх (deltaY < 0) → следующий период в SWIPE_ORDER.
+                // Прокрутка вниз  (deltaY > 0) → предыдущий период.
+                const currentKey = COMPARE_MODE ? 'compare' : CURRENT_PERIOD;
+                let idx = SWIPE_ORDER.indexOf(currentKey);
+                if (idx === -1) idx = SWIPE_ORDER.length - 1;
+
+                const dir = deltaSign < 0 ? 1 : -1;
+                const nextIdx = (idx + dir + SWIPE_ORDER.length) % SWIPE_ORDER.length;
+
+                // Направление анимации по знаку deltaY, как у свайпа:
+                // deltaY < 0 (колесо вверх) → forward
+                // deltaY > 0 (колесо вниз)  → backward
+                const animDirection = deltaSign < 0 ? 'forward' : 'backward';
+
+                setActiveTab(SWIPE_ORDER[nextIdx], { direction: animDirection });
+            }, { passive: false });
         }
 
         function setupSwipe() {
@@ -1563,6 +1748,19 @@
             }, { passive: true });
 
             container.addEventListener('touchcancel', () => { tracking = false; }, { passive: true });
+        }
+
+        // === Кнопка переключения типа диаграммы ===
+        function setupTypeToggle() {
+            const btn = document.getElementById('typeToggle');
+            if (!btn) return;
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (COMPARE_MODE) return;
+                CHART_KIND = (CHART_KIND === 'bar') ? 'line' : 'bar';
+                // Перерисовываем без анимации перелистывания
+                redraw();
+            });
         }
 
         let chartFullscreen = false;
@@ -1677,6 +1875,8 @@
         window.onload = () => {
             setupPeriodButtons();
             setupSwipe();
+            setupWheel();
+            setupTypeToggle();
             setupFullscreenToggle();
             LAST_BREAKPOINT = currentBreakpoint();
             loadData();
