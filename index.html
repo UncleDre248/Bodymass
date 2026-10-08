@@ -189,7 +189,7 @@
             position: absolute;
             inset: 4px;
             transition: transform 0.22s ease-in-out, opacity 0.22s ease-in-out;
-            will-change: transform, opacity;
+            will-change: transform, opacity, clip-path;
         }
         /* Перелистывание страниц — для переходов со «Сравнением» */
         .chart-inner.slide-out-left {
@@ -215,24 +215,26 @@
             opacity: 1;
             transition: transform 0.22s ease-out, opacity 0.22s ease-out;
         }
-        /* Зум при смене периодов: правый край неподвижен, диаграмма тянется влево */
+
+        /* Зум между периодами: ось Y не двигается.
+           Обрезаем clip-path слева, чтобы исчезла только левая часть графика.
+           Правый край остаётся на месте. */
         .chart-inner.zoom-out {
-            transform: scaleX(0.35);
-            transform-origin: right center;
-            opacity: 0.15;
+            clip-path: inset(0 0 0 60%);
+            opacity: 0.25;
+            transition: clip-path 0.22s ease-in, opacity 0.22s ease-in;
         }
         .chart-inner.zoom-in-prep {
-            transform: scaleX(0.35);
-            transform-origin: right center;
+            clip-path: inset(0 0 0 60%);
             opacity: 0;
             transition: none;
         }
         .chart-inner.zoom-in-enter {
-            transform: scaleX(1);
-            transform-origin: right center;
+            clip-path: inset(0 0 0 0%);
             opacity: 1;
-            transition: transform 0.32s cubic-bezier(0.22, 0.61, 0.36, 1),
-                        opacity 0.32s ease-out;
+            transition:
+                clip-path 0.32s cubic-bezier(0.22, 0.61, 0.36, 1),
+                opacity 0.32s ease-out;
         }
 
         /* Кнопка переключения типа диаграммы */
@@ -436,17 +438,26 @@
                 </div>
 
                 <div class="type-toggle" id="typeToggle" title="Переключить тип диаграммы">
+                    <!-- Гистограмма -->
                     <svg id="iconBars" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect x="2" y="8" width="3" height="6" fill="currentColor" rx="0.5"/>
                         <rect x="6.5" y="4" width="3" height="10" fill="currentColor" rx="0.5"/>
                         <rect x="11" y="6" width="3" height="8" fill="currentColor" rx="0.5"/>
                     </svg>
+                    <!-- Линия с точками -->
                     <svg id="iconLine" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;">
                         <path d="M2 12 L6 7 L9 9 L14 3" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
                         <circle cx="2" cy="12" r="1.3" fill="currentColor"/>
                         <circle cx="6" cy="7" r="1.3" fill="currentColor"/>
                         <circle cx="9" cy="9" r="1.3" fill="currentColor"/>
                         <circle cx="14" cy="3" r="1.3" fill="currentColor"/>
+                    </svg>
+                    <!-- Точечная диаграмма (только точки без линии) -->
+                    <svg id="iconScatter" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+                        <circle cx="3" cy="11" r="1.5" fill="currentColor"/>
+                        <circle cx="6.5" cy="6" r="1.5" fill="currentColor"/>
+                        <circle cx="10" cy="9" r="1.5" fill="currentColor"/>
+                        <circle cx="13" cy="4" r="1.5" fill="currentColor"/>
                     </svg>
                 </div>
             </div>
@@ -874,7 +885,6 @@
             }
         };
 
-        // Легенда диапазонов — по центру области графика
         const weightLegendPlugin = {
             id: 'weightLegend',
             afterDraw(chart) {
@@ -920,7 +930,6 @@
                 const columnWidth = maxTextW + textGap + boxSize;
                 const totalWidth = items.length * columnWidth + (items.length - 1) * itemGap;
 
-                // Легенда по центру области графика
                 const startX = chartArea.left + ((chartArea.right - chartArea.left) - totalWidth) / 2;
 
                 items.forEach((it, i) => {
@@ -1124,21 +1133,37 @@
 
             years.forEach((year) => {
                 const color = colorForYear(year);
-                const points = byYear[year].map(e => {
+
+                // Строим линейный ряд по дням года: dayOfYear → weight или null.
+                // Пропуски становятся null, поэтому при spanGaps: false линия разрывается.
+                const byDay = new Array(366).fill(null);
+                byYear[year].forEach(e => {
                     const startOfYear = new Date(year, 0, 1);
                     const dayOfYear = Math.floor((e.date - startOfYear) / 86400000) + 1;
-                    return { x: dayOfYear, y: e.weight };
+                    if (dayOfYear >= 1 && dayOfYear <= 366) {
+                        byDay[dayOfYear - 1] = e.weight;
+                    }
                 });
-                points.sort((a, b) => a.x - b.x);
+
+                const points = [];
+                for (let d = 0; d < 366; d++) {
+                    points.push({ x: d + 1, y: byDay[d] });
+                }
+
                 datasets.push({
                     label: String(year),
                     data: points,
                     borderColor: color,
                     backgroundColor: color,
                     showLine: false,
-                    pointRadius: pt.r,
+                    pointRadius: (ctx) => {
+                        // Скрываем точки в пустых днях
+                        if (ctx.raw && ctx.raw.y === null) return 0;
+                        return pt.r;
+                    },
                     pointHoverRadius: pt.hr,
                     pointBackgroundColor: color,
+                    spanGaps: false,
                     parsing: false
                 });
             });
@@ -1146,25 +1171,35 @@
             return { datasets, years };
         }
 
-        // Иконка кнопки: показываем ПРОТИВОПОЛОЖНЫЙ тип
+        // Показываем иконку ПРОТИВОПОЛОЖНОГО типа
         function updateTypeToggleVisibility() {
             const btn = document.getElementById('typeToggle');
             if (!btn) return;
 
+            const iconBars = document.getElementById('iconBars');
+            const iconLine = document.getElementById('iconLine');
+            const iconScatter = document.getElementById('iconScatter');
+
+            iconBars.style.display = 'none';
+            iconLine.style.display = 'none';
+            iconScatter.style.display = 'none';
+
             if (COMPARE_MODE) {
-                // Для сравнения: line (со линией) ↔ scatter (только точки)
-                // Иконка bars не очень подходит, используем те же две:
-                //   COMPARE_KIND === 'line'    → показываем iconLine (переключение в line НЕ имеет смысла,
-                //                                            но фактически смысл — «точки без линии», иконка bars)
-                // Оставим так: если сейчас 'line' → показываем iconBars (намёк на «упростить до точек»)
-                //               если сейчас 'scatter' → показываем iconLine
-                document.getElementById('iconBars').style.display = COMPARE_KIND === 'line' ? 'block' : 'none';
-                document.getElementById('iconLine').style.display = COMPARE_KIND === 'scatter' ? 'block' : 'none';
+                if (COMPARE_KIND === 'line') {
+                    // Сейчас линия — предлагаем точки без линии
+                    iconScatter.style.display = 'block';
+                } else {
+                    // Сейчас точки — предлагаем линию с точками
+                    iconLine.style.display = 'block';
+                }
             } else {
-                // Для обычных периодов: bar ↔ line
-                // Показываем ПРОТИВОПОЛОЖНУЮ иконку
-                document.getElementById('iconBars').style.display = CHART_KIND === 'line' ? 'block' : 'none';
-                document.getElementById('iconLine').style.display = CHART_KIND === 'bar' ? 'block' : 'none';
+                if (CHART_KIND === 'bar') {
+                    // Сейчас гистограмма — предлагаем линию
+                    iconLine.style.display = 'block';
+                } else {
+                    // Сейчас линия — предлагаем гистограмму
+                    iconBars.style.display = 'block';
+                }
             }
         }
 
@@ -1187,7 +1222,7 @@
 
             const barParams = getBarParams(CURRENT_PERIOD);
 
-            // Для линейного режима заменяем 0 на null — Chart.js разрывает линию в этих местах
+            // В линейном режиме нули конвертируем в null — линия обрывается
             const lineData = weights.map(w => w > 0 ? w : null);
 
             const dataset = (CHART_KIND === 'bar')
@@ -1386,6 +1421,7 @@
                                     return d.getDate() + ' ' + MONTHS_RU_FULL[d.getMonth()].toLowerCase();
                                 },
                                 label: function(context) {
+                                    if (context.parsed.y === null || context.parsed.y === undefined) return 'Нет данных';
                                     return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + ' кг';
                                 }
                             }
@@ -1453,7 +1489,8 @@
             }
 
             if (mode === 'zoom') {
-                // Зум: правый край закреплён, диаграмма сжимается/растягивается по X
+                // Зум через clip-path: обёртка не двигается, ось Y не двигается,
+                // исчезает/появляется только часть области графика.
                 inner.classList.add('zoom-out');
 
                 setTimeout(() => {
