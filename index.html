@@ -188,8 +188,8 @@
         .chart-inner {
             position: absolute;
             inset: 4px;
-            transition: transform 0.35s ease-in-out, opacity 0.35s ease-in-out, clip-path 0.35s ease-in-out;
-            will-change: transform, opacity, clip-path;
+            transition: transform 0.35s ease-in-out, opacity 0.35s ease-in-out;
+            will-change: transform, opacity;
         }
         /* Перелистывание страниц — для переходов со «Сравнением» */
         .chart-inner.slide-out-left {
@@ -216,24 +216,30 @@
             transition: transform 0.4s ease-out, opacity 0.4s ease-out;
         }
 
-        /* Зум между периодами: обрезается только область правее оси Y.
-           Значение --zoom-left-cut вычисляется в JS из реальной позиции оси. */
+        /* Зум между периодами:
+           правый край закреплён, вся диаграмма растягивается/сжимается по X
+           относительно него. transform-origin: right center — правый край
+           неподвижен, левый подъезжает к нему при уменьшении scaleX и
+           отъезжает влево при увеличении. */
         .chart-inner.zoom-out {
-            clip-path: inset(0 0 0 var(--zoom-left-cut, 40%));
-            opacity: 0.55;
-            transition: clip-path 0.34s ease-in, opacity 0.34s ease-in;
+            transform: scaleX(0.55);
+            transform-origin: right center;
+            opacity: 0.45;
+            transition: transform 0.4s ease-in, opacity 0.4s ease-in;
         }
         .chart-inner.zoom-in-prep {
-            clip-path: inset(0 0 0 var(--zoom-left-cut, 40%));
-            opacity: 0.3;
+            transform: scaleX(0.55);
+            transform-origin: right center;
+            opacity: 0;
             transition: none;
         }
         .chart-inner.zoom-in-enter {
-            clip-path: inset(0 0 0 0%);
+            transform: scaleX(1);
+            transform-origin: right center;
             opacity: 1;
             transition:
-                clip-path 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
-                opacity 0.5s ease-out;
+                transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1),
+                opacity 0.4s ease-out;
         }
 
         /* Кнопка переключения типа диаграммы */
@@ -490,11 +496,10 @@
         ];
 
         const Y_GRID_COLOR      = 'rgba(255,255,255,0.10)';
-        const START_LINE_COLOR  = 'rgba(255,255,255,0.25)';
         const MONTH_GRID_COLOR  = 'rgba(255,255,255,0.06)';
         const MONTH_GRID_COLOR_COMPARE = 'rgba(255,255,255,0.08)';
         const YEAR_LINE_COLOR   = 'rgba(200,216,232,0.25)';
-        // Цвет линий осей (совпадает со стартовой вертикальной линией)
+        // Цвет линий осей (используется только border осей)
         const AXIS_LINE_COLOR   = 'rgba(255,255,255,0.25)';
 
         const V_AXIS_DATE = new Date(2024, 7, 1);
@@ -660,25 +665,8 @@
             return center - half;
         }
 
-        const yAxisLinePlugin = {
-            id: 'yAxisLine',
-            beforeDatasetsDraw(chart) {
-                if (chart._compareMode) return;
-                const { ctx, chartArea } = chart;
-                if (!chartArea) return;
-                if (chart._vAxisIndex == null) return;
-                const x = getLeftEdgeX(chart, chart._vAxisIndex);
-                if (x < chartArea.left || x > chartArea.right) return;
-                ctx.save();
-                ctx.beginPath();
-                ctx.lineWidth = 1;
-                ctx.strokeStyle = START_LINE_COLOR;
-                ctx.moveTo(x, chartArea.top);
-                ctx.lineTo(x, chartArea.bottom);
-                ctx.stroke();
-                ctx.restore();
-            }
-        };
+        // yAxisLinePlugin удалён — линия оси Y теперь задаётся через border осей,
+        // чтобы не было двух наложенных вертикальных линий.
 
         const yearLinesPlugin = {
             id: 'yearLines',
@@ -1235,9 +1223,10 @@
                     spanGaps: false
                 };
 
+            // yAxisLinePlugin больше не подключаем — остаётся только border оси Y
             chart = new Chart(ctx, {
                 type: CHART_KIND,
-                plugins: [monthGridPlugin, yAxisLinePlugin, yearLinesPlugin, minMaxLinesPlugin, monthLabelsPlugin, yearLabelsPlugin, weightLegendPlugin],
+                plugins: [monthGridPlugin, yearLinesPlugin, minMaxLinesPlugin, monthLabelsPlugin, yearLabelsPlugin, weightLegendPlugin],
                 data: {
                     labels: labels,
                     datasets: [dataset]
@@ -1309,7 +1298,6 @@
             chart._yearSegments = yearSegments;
             chart._monthSegments = monthSegments;
             chart._vAxisIndex = vAxisIndex;
-            // Легенду диапазонов показываем только для гистограмм
             chart._showWeightLegend = (CHART_KIND === 'bar');
             chart._legendWeights = entries.map(e => e.weight);
 
@@ -1480,21 +1468,6 @@
             updateTypeToggleVisibility();
         }
 
-        // Вычисляет долю ширины канваса, которую занимает ось Y (chartArea.left).
-        // Используется как левая граница clip-path — чтобы ось Y не обрезалась.
-        function computeZoomLeftCut() {
-            if (!chart || !chart.chartArea) return 40;
-            const canvas = document.getElementById('weightChart');
-            if (!canvas) return 40;
-            const totalW = canvas.clientWidth || canvas.offsetWidth;
-            if (!totalW) return 40;
-            const leftPx = chart.chartArea.left;
-            // Чуть-чуть меньше, чем положение chartArea.left, чтобы ось гарантированно
-            // осталась видимой (сама вертикальная линия оси). Отнимаем ~6 px.
-            const cut = Math.max(0, (leftPx - 6)) / totalW * 100;
-            return Math.max(0, Math.min(80, cut));
-        }
-
         function playTransition(mode, direction, callback) {
             const inner = document.getElementById('chartInner');
             if (!inner) { callback(); return; }
@@ -1511,10 +1484,8 @@
             }
 
             if (mode === 'zoom') {
-                // Вычисляем левый край clip-path по реальной позиции оси Y
-                const cutPct = computeZoomLeftCut();
-                inner.style.setProperty('--zoom-left-cut', cutPct.toFixed(2) + '%');
-
+                // Сжимаем/разжимаем всю диаграмму по X относительно правого края.
+                // Правый край закреплён, левый подъезжает/отъезжает.
                 inner.classList.add('zoom-out');
 
                 setTimeout(() => {
@@ -1530,8 +1501,8 @@
                     setTimeout(() => {
                         inner.classList.remove('zoom-in-enter');
                         switchInProgress = false;
-                    }, 520);
-                }, 360);
+                    }, 600);
+                }, 420);
             } else {
                 const outClass = direction === 'forward' ? 'slide-out-left' : 'slide-out-right';
                 const inClass  = direction === 'forward' ? 'slide-in-from-right' : 'slide-in-from-left';
