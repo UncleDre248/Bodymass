@@ -185,8 +185,6 @@
             touch-action: manipulation;
         }
 
-        /* Без затухания — только горизонтальный сдвиг.
-           translateX на 100%, чтобы диаграмма реально ушла за край. */
         .chart-inner {
             position: absolute;
             inset: 4px;
@@ -483,7 +481,8 @@
         let chart = null;
 
         let CHART_KIND = 'bar';
-        let COMPARE_KIND = 'line';
+        // По умолчанию «Сравнение» показывает точечную диаграмму
+        let COMPARE_KIND = 'scatter';
 
         let switchInProgress = false;
         let LAST_BREAKPOINT = -1;
@@ -1132,6 +1131,8 @@
             iconScatter.style.display = 'none';
 
             if (COMPARE_MODE) {
+                // COMPARE_KIND === 'line' — предлагаем точки (iconScatter)
+                // COMPARE_KIND === 'scatter' — предлагаем линию с точками (iconLine)
                 if (COMPARE_KIND === 'line') {
                     iconScatter.style.display = 'block';
                 } else {
@@ -1452,7 +1453,6 @@
             const outClass = direction === 'forward' ? 'slide-out-left' : 'slide-out-right';
             const inClass  = direction === 'forward' ? 'slide-in-from-right' : 'slide-in-from-left';
 
-            // Фаза out — 260 мс
             inner.classList.add(outClass);
 
             setTimeout(() => {
@@ -1465,7 +1465,6 @@
                 inner.classList.remove(inClass);
                 inner.classList.add('slide-in-enter');
 
-                // Фаза in — 260 мс
                 setTimeout(() => {
                     inner.classList.remove('slide-in-enter');
                     switchInProgress = false;
