@@ -192,12 +192,7 @@
                 transform 0.45s ease-in-out,
                 opacity 0.45s ease-in-out;
             will-change: transform, opacity;
-            /* --axis-x задаётся из JS: позиция оси Y в % от ширины canvas.
-               Точка деформации совпадает с осью Y — сама ось не двигается. */
-            transform-origin: var(--axis-x, 8%) center;
         }
-
-        /* Перелистывание страниц — для переходов со «Сравнением» */
         .chart-inner.slide-out-left {
             transform: translateX(-25%);
             opacity: 0;
@@ -218,24 +213,6 @@
         }
         .chart-inner.slide-in-enter {
             transform: translateX(0);
-            opacity: 1;
-            transition: transform 0.45s ease-out, opacity 0.45s ease-out;
-        }
-
-        /* Зум между периодами: точка деформации совпадает с осью Y.
-           Ось Y неподвижна, всё правее — сжимается/растягивается к ней. */
-        .chart-inner.zoom-out {
-            transform: scaleX(0.5);
-            opacity: 0;
-            transition: transform 0.45s ease-in-out, opacity 0.45s ease-in-out;
-        }
-        .chart-inner.zoom-in-prep {
-            transform: scaleX(0.5);
-            opacity: 0;
-            transition: none;
-        }
-        .chart-inner.zoom-in-enter {
-            transform: scaleX(1);
             opacity: 1;
             transition: transform 0.45s ease-out, opacity 0.45s ease-out;
         }
@@ -1461,25 +1438,16 @@
             updateTypeToggleVisibility();
         }
 
-        // Позиция оси Y в % от ширины canvas. Используется как transform-origin —
-        // точка деформации, совпадающая с осью Y, чтобы ось не двигалась при scaleX.
-        function computeAxisXPercent() {
-            if (!chart || !chart.chartArea) return 8;
-            const canvas = document.getElementById('weightChart');
-            if (!canvas) return 8;
-            const totalW = canvas.clientWidth || canvas.offsetWidth;
-            if (!totalW) return 8;
-            return (chart.chartArea.left / totalW) * 100;
-        }
-
-        function playTransition(mode, direction, callback) {
+        // Единый эффект перелистывания для всех переходов.
+        // direction='forward' — уезжает влево, приезжает справа.
+        // direction='backward' — уезжает вправо, приезжает слева.
+        function playTransition(direction, callback) {
             const inner = document.getElementById('chartInner');
             if (!inner) { callback(); return; }
 
             inner.classList.remove(
                 'slide-out-left', 'slide-out-right',
-                'slide-in-from-right', 'slide-in-from-left', 'slide-in-enter',
-                'zoom-out', 'zoom-in-prep', 'zoom-in-enter'
+                'slide-in-from-right', 'slide-in-from-left', 'slide-in-enter'
             );
 
             if (direction === 'same') {
@@ -1487,53 +1455,28 @@
                 return;
             }
 
-            if (mode === 'zoom') {
-                // Ставим transform-origin в точку оси Y — ось не двигается,
-                // всё правее сжимается/растягивается к ней.
-                const axisPct = computeAxisXPercent();
-                inner.style.setProperty('--axis-x', axisPct.toFixed(2) + '%');
+            const outClass = direction === 'forward' ? 'slide-out-left' : 'slide-out-right';
+            const inClass  = direction === 'forward' ? 'slide-in-from-right' : 'slide-in-from-left';
 
-                // Фаза out — 450 мс
-                inner.classList.add('zoom-out');
+            // Фаза out — 450 мс
+            inner.classList.add(outClass);
 
+            setTimeout(() => {
+                callback();
+
+                inner.classList.remove(outClass);
+                inner.classList.add(inClass);
+                void inner.offsetWidth;
+
+                inner.classList.remove(inClass);
+                inner.classList.add('slide-in-enter');
+
+                // Фаза in — 450 мс
                 setTimeout(() => {
-                    callback();
-
-                    inner.classList.remove('zoom-out');
-                    inner.classList.add('zoom-in-prep');
-                    void inner.offsetWidth;
-
-                    inner.classList.remove('zoom-in-prep');
-                    inner.classList.add('zoom-in-enter');
-
-                    // Фаза in — 450 мс
-                    setTimeout(() => {
-                        inner.classList.remove('zoom-in-enter');
-                        switchInProgress = false;
-                    }, 470);
-                }, 460);
-            } else {
-                const outClass = direction === 'forward' ? 'slide-out-left' : 'slide-out-right';
-                const inClass  = direction === 'forward' ? 'slide-in-from-right' : 'slide-in-from-left';
-
-                inner.classList.add(outClass);
-
-                setTimeout(() => {
-                    callback();
-
-                    inner.classList.remove(outClass);
-                    inner.classList.add(inClass);
-                    void inner.offsetWidth;
-
-                    inner.classList.remove(inClass);
-                    inner.classList.add('slide-in-enter');
-
-                    setTimeout(() => {
-                        inner.classList.remove('slide-in-enter');
-                        switchInProgress = false;
-                    }, 470);
-                }, 460);
-            }
+                    inner.classList.remove('slide-in-enter');
+                    switchInProgress = false;
+                }, 470);
+            }, 460);
         }
 
         function redraw() {
@@ -1647,8 +1590,6 @@
                 }
             }
 
-            const transitionMode = (oldKey === 'compare' || tabKey === 'compare') ? 'slide' : 'zoom';
-
             if (tabKey === 'compare') {
                 COMPARE_MODE = true;
                 CURRENT_PERIOD = 'all';
@@ -1677,7 +1618,7 @@
             }
 
             switchInProgress = true;
-            playTransition(transitionMode, direction, () => {
+            playTransition(direction, () => {
                 if (COMPARE_MODE) {
                     const allEntries = filterByPeriod(ALL_ENTRIES, 'all');
                     createCompareChart(allEntries);
