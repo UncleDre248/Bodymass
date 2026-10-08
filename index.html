@@ -188,7 +188,7 @@
         .chart-inner {
             position: absolute;
             inset: 4px;
-            transition: transform 0.22s ease-in-out, opacity 0.22s ease-in-out;
+            transition: transform 0.35s ease-in-out, opacity 0.35s ease-in-out, clip-path 0.35s ease-in-out;
             will-change: transform, opacity, clip-path;
         }
         /* Перелистывание страниц — для переходов со «Сравнением» */
@@ -213,28 +213,27 @@
         .chart-inner.slide-in-enter {
             transform: translateX(0);
             opacity: 1;
-            transition: transform 0.22s ease-out, opacity 0.22s ease-out;
+            transition: transform 0.4s ease-out, opacity 0.4s ease-out;
         }
 
-        /* Зум между периодами: ось Y не двигается.
-           Обрезаем clip-path слева, чтобы исчезла только левая часть графика.
-           Правый край остаётся на месте. */
+        /* Зум между периодами: обрезается только область правее оси Y.
+           Значение --zoom-left-cut вычисляется в JS из реальной позиции оси. */
         .chart-inner.zoom-out {
-            clip-path: inset(0 0 0 60%);
-            opacity: 0.25;
-            transition: clip-path 0.22s ease-in, opacity 0.22s ease-in;
+            clip-path: inset(0 0 0 var(--zoom-left-cut, 40%));
+            opacity: 0.55;
+            transition: clip-path 0.34s ease-in, opacity 0.34s ease-in;
         }
         .chart-inner.zoom-in-prep {
-            clip-path: inset(0 0 0 60%);
-            opacity: 0;
+            clip-path: inset(0 0 0 var(--zoom-left-cut, 40%));
+            opacity: 0.3;
             transition: none;
         }
         .chart-inner.zoom-in-enter {
             clip-path: inset(0 0 0 0%);
             opacity: 1;
             transition:
-                clip-path 0.32s cubic-bezier(0.22, 0.61, 0.36, 1),
-                opacity 0.32s ease-out;
+                clip-path 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
+                opacity 0.5s ease-out;
         }
 
         /* Кнопка переключения типа диаграммы */
@@ -438,13 +437,11 @@
                 </div>
 
                 <div class="type-toggle" id="typeToggle" title="Переключить тип диаграммы">
-                    <!-- Гистограмма -->
                     <svg id="iconBars" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect x="2" y="8" width="3" height="6" fill="currentColor" rx="0.5"/>
                         <rect x="6.5" y="4" width="3" height="10" fill="currentColor" rx="0.5"/>
                         <rect x="11" y="6" width="3" height="8" fill="currentColor" rx="0.5"/>
                     </svg>
-                    <!-- Линия с точками -->
                     <svg id="iconLine" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;">
                         <path d="M2 12 L6 7 L9 9 L14 3" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
                         <circle cx="2" cy="12" r="1.3" fill="currentColor"/>
@@ -452,7 +449,6 @@
                         <circle cx="9" cy="9" r="1.3" fill="currentColor"/>
                         <circle cx="14" cy="3" r="1.3" fill="currentColor"/>
                     </svg>
-                    <!-- Точечная диаграмма (только точки без линии) -->
                     <svg id="iconScatter" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;">
                         <circle cx="3" cy="11" r="1.5" fill="currentColor"/>
                         <circle cx="6.5" cy="6" r="1.5" fill="currentColor"/>
@@ -498,6 +494,8 @@
         const MONTH_GRID_COLOR  = 'rgba(255,255,255,0.06)';
         const MONTH_GRID_COLOR_COMPARE = 'rgba(255,255,255,0.08)';
         const YEAR_LINE_COLOR   = 'rgba(200,216,232,0.25)';
+        // Цвет линий осей (совпадает со стартовой вертикальной линией)
+        const AXIS_LINE_COLOR   = 'rgba(255,255,255,0.25)';
 
         const V_AXIS_DATE = new Date(2024, 7, 1);
         const MAX_DATE = new Date(2026, 11, 31, 23, 59, 59);
@@ -511,8 +509,6 @@
         let COMPARE_MODE = false;
         let chart = null;
 
-        // Тип диаграммы для обычных периодов: 'bar' | 'line'
-        // Тип диаграммы для сравнения: 'line' (с линией) | 'scatter' (только точки)
         let CHART_KIND = 'bar';
         let COMPARE_KIND = 'line';
 
@@ -1134,8 +1130,6 @@
             years.forEach((year) => {
                 const color = colorForYear(year);
 
-                // Строим линейный ряд по дням года: dayOfYear → weight или null.
-                // Пропуски становятся null, поэтому при spanGaps: false линия разрывается.
                 const byDay = new Array(366).fill(null);
                 byYear[year].forEach(e => {
                     const startOfYear = new Date(year, 0, 1);
@@ -1157,7 +1151,6 @@
                     backgroundColor: color,
                     showLine: false,
                     pointRadius: (ctx) => {
-                        // Скрываем точки в пустых днях
                         if (ctx.raw && ctx.raw.y === null) return 0;
                         return pt.r;
                     },
@@ -1171,7 +1164,6 @@
             return { datasets, years };
         }
 
-        // Показываем иконку ПРОТИВОПОЛОЖНОГО типа
         function updateTypeToggleVisibility() {
             const btn = document.getElementById('typeToggle');
             if (!btn) return;
@@ -1186,18 +1178,14 @@
 
             if (COMPARE_MODE) {
                 if (COMPARE_KIND === 'line') {
-                    // Сейчас линия — предлагаем точки без линии
                     iconScatter.style.display = 'block';
                 } else {
-                    // Сейчас точки — предлагаем линию с точками
                     iconLine.style.display = 'block';
                 }
             } else {
                 if (CHART_KIND === 'bar') {
-                    // Сейчас гистограмма — предлагаем линию
                     iconLine.style.display = 'block';
                 } else {
-                    // Сейчас линия — предлагаем гистограмму
                     iconBars.style.display = 'block';
                 }
             }
@@ -1222,7 +1210,6 @@
 
             const barParams = getBarParams(CURRENT_PERIOD);
 
-            // В линейном режиме нули конвертируем в null — линия обрывается
             const lineData = weights.map(w => w > 0 ? w : null);
 
             const dataset = (CHART_KIND === 'bar')
@@ -1289,6 +1276,11 @@
                                 padding: { top: 0, bottom: 2 }
                             },
                             grid: { color: Y_GRID_COLOR },
+                            border: {
+                                display: true,
+                                color: AXIS_LINE_COLOR,
+                                width: 1
+                            },
                             ticks: {
                                 color: '#c8d8e8',
                                 stepSize: 1,
@@ -1300,6 +1292,11 @@
                         x: {
                             title: { display: false },
                             grid: { display: false },
+                            border: {
+                                display: true,
+                                color: AXIS_LINE_COLOR,
+                                width: 1
+                            },
                             ticks: { display: false }
                         }
                     }
@@ -1312,7 +1309,8 @@
             chart._yearSegments = yearSegments;
             chart._monthSegments = monthSegments;
             chart._vAxisIndex = vAxisIndex;
-            chart._showWeightLegend = true;
+            // Легенду диапазонов показываем только для гистограмм
+            chart._showWeightLegend = (CHART_KIND === 'bar');
             chart._legendWeights = entries.map(e => e.weight);
 
             setTimeout(() => {
@@ -1343,7 +1341,6 @@
             const ctx = document.getElementById('weightChart').getContext('2d');
             const { datasets } = buildCompareChartData(entries);
 
-            // Для сравнения: 'line' — точки + линия; 'scatter' — только точки
             if (COMPARE_KIND === 'line') {
                 datasets.forEach(ds => { ds.showLine = true; });
             } else {
@@ -1438,6 +1435,11 @@
                                 padding: { top: 0, bottom: 2 }
                             },
                             grid: { color: Y_GRID_COLOR },
+                            border: {
+                                display: true,
+                                color: AXIS_LINE_COLOR,
+                                width: 1
+                            },
                             ticks: {
                                 color: '#c8d8e8',
                                 stepSize: 1,
@@ -1452,6 +1454,11 @@
                             max: 366,
                             title: { display: false },
                             grid: { display: false },
+                            border: {
+                                display: true,
+                                color: AXIS_LINE_COLOR,
+                                width: 1
+                            },
                             ticks: { display: false }
                         }
                     }
@@ -1473,6 +1480,21 @@
             updateTypeToggleVisibility();
         }
 
+        // Вычисляет долю ширины канваса, которую занимает ось Y (chartArea.left).
+        // Используется как левая граница clip-path — чтобы ось Y не обрезалась.
+        function computeZoomLeftCut() {
+            if (!chart || !chart.chartArea) return 40;
+            const canvas = document.getElementById('weightChart');
+            if (!canvas) return 40;
+            const totalW = canvas.clientWidth || canvas.offsetWidth;
+            if (!totalW) return 40;
+            const leftPx = chart.chartArea.left;
+            // Чуть-чуть меньше, чем положение chartArea.left, чтобы ось гарантированно
+            // осталась видимой (сама вертикальная линия оси). Отнимаем ~6 px.
+            const cut = Math.max(0, (leftPx - 6)) / totalW * 100;
+            return Math.max(0, Math.min(80, cut));
+        }
+
         function playTransition(mode, direction, callback) {
             const inner = document.getElementById('chartInner');
             if (!inner) { callback(); return; }
@@ -1489,8 +1511,10 @@
             }
 
             if (mode === 'zoom') {
-                // Зум через clip-path: обёртка не двигается, ось Y не двигается,
-                // исчезает/появляется только часть области графика.
+                // Вычисляем левый край clip-path по реальной позиции оси Y
+                const cutPct = computeZoomLeftCut();
+                inner.style.setProperty('--zoom-left-cut', cutPct.toFixed(2) + '%');
+
                 inner.classList.add('zoom-out');
 
                 setTimeout(() => {
@@ -1506,8 +1530,8 @@
                     setTimeout(() => {
                         inner.classList.remove('zoom-in-enter');
                         switchInProgress = false;
-                    }, 340);
-                }, 220);
+                    }, 520);
+                }, 360);
             } else {
                 const outClass = direction === 'forward' ? 'slide-out-left' : 'slide-out-right';
                 const inClass  = direction === 'forward' ? 'slide-in-from-right' : 'slide-in-from-left';
@@ -1527,8 +1551,8 @@
                     setTimeout(() => {
                         inner.classList.remove('slide-in-enter');
                         switchInProgress = false;
-                    }, 240);
-                }, 200);
+                    }, 420);
+                }, 360);
             }
         }
 
