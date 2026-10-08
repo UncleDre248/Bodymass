@@ -217,7 +217,6 @@
             transition: transform 0.45s ease-out, opacity 0.45s ease-out;
         }
 
-        /* Кнопка переключения типа диаграммы */
         .type-toggle {
             position: absolute;
             top: 6px;
@@ -1109,6 +1108,11 @@
                     borderColor: color,
                     backgroundColor: color,
                     showLine: false,
+                    // Плавная линия без острых углов у маркеров
+                    tension: 0.45,
+                    // Монотонная интерполяция — линия не «выстреливает»
+                    // за пределы между точками
+                    cubicInterpolationMode: 'monotone',
                     pointRadius: (ctx) => {
                         if (ctx.raw && ctx.raw.y === null) return 0;
                         return pt.r;
@@ -1190,7 +1194,8 @@
                     borderWidth: 1.5,
                     pointRadius: 0,
                     pointHoverRadius: 3,
-                    tension: 0.25,
+                    tension: 0.45,
+                    cubicInterpolationMode: 'monotone',
                     spanGaps: false
                 };
 
@@ -1438,9 +1443,6 @@
             updateTypeToggleVisibility();
         }
 
-        // Единый эффект перелистывания для всех переходов.
-        // direction='forward' — уезжает влево, приезжает справа.
-        // direction='backward' — уезжает вправо, приезжает слева.
         function playTransition(direction, callback) {
             const inner = document.getElementById('chartInner');
             if (!inner) { callback(); return; }
@@ -1458,7 +1460,6 @@
             const outClass = direction === 'forward' ? 'slide-out-left' : 'slide-out-right';
             const inClass  = direction === 'forward' ? 'slide-in-from-right' : 'slide-in-from-left';
 
-            // Фаза out — 450 мс
             inner.classList.add(outClass);
 
             setTimeout(() => {
@@ -1471,7 +1472,6 @@
                 inner.classList.remove(inClass);
                 inner.classList.add('slide-in-enter');
 
-                // Фаза in — 450 мс
                 setTimeout(() => {
                     inner.classList.remove('slide-in-enter');
                     switchInProgress = false;
