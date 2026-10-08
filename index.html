@@ -189,8 +189,8 @@
             position: absolute;
             inset: 4px;
             transition:
-                transform 0.45s ease-in-out,
-                opacity 0.45s ease-in-out;
+                transform 0.26s ease-in-out,
+                opacity 0.26s ease-in-out;
             will-change: transform, opacity;
         }
         .chart-inner.slide-out-left {
@@ -214,7 +214,7 @@
         .chart-inner.slide-in-enter {
             transform: translateX(0);
             opacity: 1;
-            transition: transform 0.45s ease-out, opacity 0.45s ease-out;
+            transition: transform 0.26s ease-out, opacity 0.26s ease-out;
         }
 
         .type-toggle {
@@ -1108,10 +1108,7 @@
                     borderColor: color,
                     backgroundColor: color,
                     showLine: false,
-                    // Плавная линия без острых углов у маркеров
                     tension: 0.45,
-                    // Монотонная интерполяция — линия не «выстреливает»
-                    // за пределы между точками
                     cubicInterpolationMode: 'monotone',
                     pointRadius: (ctx) => {
                         if (ctx.raw && ctx.raw.y === null) return 0;
@@ -1460,6 +1457,7 @@
             const outClass = direction === 'forward' ? 'slide-out-left' : 'slide-out-right';
             const inClass  = direction === 'forward' ? 'slide-in-from-right' : 'slide-in-from-left';
 
+            // Фаза out — 260 мс
             inner.classList.add(outClass);
 
             setTimeout(() => {
@@ -1472,11 +1470,12 @@
                 inner.classList.remove(inClass);
                 inner.classList.add('slide-in-enter');
 
+                // Фаза in — 260 мс
                 setTimeout(() => {
                     inner.classList.remove('slide-in-enter');
                     switchInProgress = false;
-                }, 470);
-            }, 460);
+                }, 280);
+            }, 270);
         }
 
         function redraw() {
