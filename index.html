@@ -188,9 +188,15 @@
         .chart-inner {
             position: absolute;
             inset: 4px;
-            transition: transform 0.35s ease-in-out, opacity 0.35s ease-in-out, clip-path 0.35s ease-in-out;
-            will-change: transform, opacity, clip-path;
+            transition:
+                transform 0.45s ease-in-out,
+                opacity 0.45s ease-in-out;
+            will-change: transform, opacity;
+            /* --axis-x задаётся из JS: позиция оси Y в % от ширины canvas.
+               Точка деформации совпадает с осью Y — сама ось не двигается. */
+            transform-origin: var(--axis-x, 8%) center;
         }
+
         /* Перелистывание страниц — для переходов со «Сравнением» */
         .chart-inner.slide-out-left {
             transform: translateX(-25%);
@@ -213,30 +219,25 @@
         .chart-inner.slide-in-enter {
             transform: translateX(0);
             opacity: 1;
-            transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+            transition: transform 0.45s ease-out, opacity 0.45s ease-out;
         }
 
-        /* Зум между периодами.
-           Обрезаем canvas по левому краю — ровно по правой границе оси Y.
-           Сама ось Y остаётся неподвижной и видимой, потому что попадает
-           в неотрезаемую зону. Данные правее — исчезают/появляются.
-           Никакого transform на обёртке — ось не сжимается и не сдвигается. */
+        /* Зум между периодами: точка деформации совпадает с осью Y.
+           Ось Y неподвижна, всё правее — сжимается/растягивается к ней. */
         .chart-inner.zoom-out {
-            clip-path: inset(0 0 0 var(--zoom-left-cut, 12%));
-            opacity: 0.55;
-            transition: clip-path 0.4s ease-in, opacity 0.4s ease-in;
+            transform: scaleX(0.5);
+            opacity: 0;
+            transition: transform 0.45s ease-in-out, opacity 0.45s ease-in-out;
         }
         .chart-inner.zoom-in-prep {
-            clip-path: inset(0 0 0 var(--zoom-left-cut, 12%));
-            opacity: 0.3;
+            transform: scaleX(0.5);
+            opacity: 0;
             transition: none;
         }
         .chart-inner.zoom-in-enter {
-            clip-path: inset(0 0 0 0%);
+            transform: scaleX(1);
             opacity: 1;
-            transition:
-                clip-path 0.55s cubic-bezier(0.22, 0.61, 0.36, 1),
-                opacity 0.4s ease-out;
+            transition: transform 0.45s ease-out, opacity 0.45s ease-out;
         }
 
         /* Кнопка переключения типа диаграммы */
@@ -1460,19 +1461,15 @@
             updateTypeToggleVisibility();
         }
 
-        // Вычисляет долю ширины канваса, которую занимает ось Y (chartArea.left).
-        // Используется как левая граница clip-path — чтобы ось Y не обрезалась.
-        function computeZoomLeftCut() {
-            if (!chart || !chart.chartArea) return 12;
+        // Позиция оси Y в % от ширины canvas. Используется как transform-origin —
+        // точка деформации, совпадающая с осью Y, чтобы ось не двигалась при scaleX.
+        function computeAxisXPercent() {
+            if (!chart || !chart.chartArea) return 8;
             const canvas = document.getElementById('weightChart');
-            if (!canvas) return 12;
+            if (!canvas) return 8;
             const totalW = canvas.clientWidth || canvas.offsetWidth;
-            if (!totalW) return 12;
-            const leftPx = chart.chartArea.left;
-            // Чуть-чуть меньше, чем положение chartArea.left, чтобы ось гарантированно
-            // осталась видимой (сама вертикальная линия оси). Отнимаем ~6 px.
-            const cut = Math.max(0, (leftPx - 6)) / totalW * 100;
-            return Math.max(0, Math.min(80, cut));
+            if (!totalW) return 8;
+            return (chart.chartArea.left / totalW) * 100;
         }
 
         function playTransition(mode, direction, callback) {
@@ -1491,9 +1488,12 @@
             }
 
             if (mode === 'zoom') {
-                const cutPct = computeZoomLeftCut();
-                inner.style.setProperty('--zoom-left-cut', cutPct.toFixed(2) + '%');
+                // Ставим transform-origin в точку оси Y — ось не двигается,
+                // всё правее сжимается/растягивается к ней.
+                const axisPct = computeAxisXPercent();
+                inner.style.setProperty('--axis-x', axisPct.toFixed(2) + '%');
 
+                // Фаза out — 450 мс
                 inner.classList.add('zoom-out');
 
                 setTimeout(() => {
@@ -1506,11 +1506,12 @@
                     inner.classList.remove('zoom-in-prep');
                     inner.classList.add('zoom-in-enter');
 
+                    // Фаза in — 450 мс
                     setTimeout(() => {
                         inner.classList.remove('zoom-in-enter');
                         switchInProgress = false;
-                    }, 600);
-                }, 420);
+                    }, 470);
+                }, 460);
             } else {
                 const outClass = direction === 'forward' ? 'slide-out-left' : 'slide-out-right';
                 const inClass  = direction === 'forward' ? 'slide-in-from-right' : 'slide-in-from-left';
@@ -1530,8 +1531,8 @@
                     setTimeout(() => {
                         inner.classList.remove('slide-in-enter');
                         switchInProgress = false;
-                    }, 420);
-                }, 360);
+                    }, 470);
+                }, 460);
             }
         }
 
